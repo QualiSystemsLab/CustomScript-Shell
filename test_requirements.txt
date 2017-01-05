@@ -1,0 +1,4 @@
+coverage
+teamcity-messages
+nose-exclude
+coveralls
