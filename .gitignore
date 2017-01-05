@@ -1,0 +1,9 @@
+.project
+.idea/
+*.orig
+*.pyc
+drivers/customscript_shell.zip
+drivers/customscript_shellPackage/Resource Drivers - Python/*.zip
+.eggs/
+cloudshell_cm_customscript.egg-info/
+package/cloudshell_cm_customscript.egg-info/

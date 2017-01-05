@@ -1,0 +1,7 @@
+<Driver Description="" MainClass="driver.CustomScriptShellDriver" Name="Custom Script Shell Driver" Version="1.0.0">
+    <Layout>
+        <Category Name="General">
+            <Command Description="" DisplayName="Run Custom Script Test" Name="run_custom_script_test" Tags="allow_unreserved" />
+        </Category>
+    </Layout>
+</Driver>
