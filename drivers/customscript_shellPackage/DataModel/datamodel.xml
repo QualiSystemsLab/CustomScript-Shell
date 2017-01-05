@@ -3,14 +3,6 @@
   <Attributes>
 	<AttributeInfo Name="Execution Server Selector" Type="String" DefaultValue="" Description="This attribute points to a pre-define group of execution servers. Usually used for different sites or domains." IsReadOnly="false">
 	</AttributeInfo>
-    <AttributeInfo Name="Ansible Additional Arguments" Description="Additional arguments that can be applied on the Ansible playbook execution" Type="String" DefaultValue="" IsReadOnly="false">
-      <Rules />
-    </AttributeInfo>
-    <AttributeInfo Name="Supports Ansible" Type="Boolean" Description="Indicates that an Execution Server has Ansible installed and can run the Ansible driver" DefaultValue="True" IsReadOnly="true">
-      <Rules>
-        <Rule Name="Execution Server Selector" />
-      </Rules>
-    </AttributeInfo>
   </Attributes>
   <ResourceFamilies>
     <ResourceFamily Name="Configuration Services" Description="" IsAdminOnly="true" IsService="true" ServiceType="Regular">
@@ -23,23 +15,14 @@
         <AttributeValue Name="Execution Server Selector" Value="" />
       </AttributeValues>
       <Models>
-        <ResourceModel Name="Ansible Configuration" Description="" SupportsConcurrentCommands="false">
-          <AttachedAttributes>
-            <AttachedAttribute Name="Ansible Additional Arguments" IsOverridable="true" IsLocal="true">
-              <AllowedValues />
-            </AttachedAttribute>
-            <AttachedAttribute Name="Supports Ansible" IsOverridable="true" IsLocal="true">
-              <AllowedValues />
-            </AttachedAttribute>
-          </AttachedAttributes>
+        <ResourceModel Name="Custom Script Configuration" Description="" SupportsConcurrentCommands="false">
+          <AttachedAttributes/>
           <AttributeValues>
-            <AttributeValue Name="Ansible Additional Arguments" Value="" />
-            <AttributeValue Name="Supports Ansible" Value="True" />
             <AttributeValue Name="Execution Server Selector" Value="" />
           </AttributeValues>
           <ParentModels />
           <Drivers>
-            <DriverName>Ansible Shell Driver</DriverName>
+            <DriverName>Custom Script Driver</DriverName>
           </Drivers>
           <Scripts />
         </ResourceModel>
@@ -47,7 +30,7 @@
     </ResourceFamily>
   </ResourceFamilies>
   <DriverDescriptors>
-    <DriverDescriptor Name="Ansible Shell Driver" Description="This driver will run an ansible playbook to configure an app" DriverType="PythonDriver" />
+    <DriverDescriptor Name="Custom Script Driver" Description="This driver will run a script on the target machine to configure an app" DriverType="PythonDriver" />
   </DriverDescriptors>
   <ScriptDescriptors />
 </DataModelInfo>
