@@ -54,6 +54,16 @@ class ExecutionResult(object):
         self.success = success
 
 
+# def throw_error(err):
+#     def func_provider(func):
+#         def func_wrapper(*args, **kwargs):
+#             result = func(*args, **kwargs)
+#             if result.status_code != 0:
+#                 raise Exception(err + os.linesep + result.success)
+#         return func_wrapper
+#     return func_provider
+
+
 class ReservationOutputWriter(object):
     def __init__(self, session, command_context):
         """

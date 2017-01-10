@@ -76,7 +76,9 @@ Remove-Item $path -recurse
             raise Exception(ErrorMsg.DELETE_TEMP_FOLDER % result.std_err)
 
     def _run_ps(self, txt, *args):
-        result = self.session.run_ps(txt % args)
+        code = txt % args
+        self.logger.debug('PowerShellScript:' + code)
+        result = self.session.run_ps(code)
         self.logger.debug('ReturnedCode:' + result.status_code)
         self.logger.debug('Stdout:' + result.std_out)
         self.logger.debug('Stderr:' + result.std_err)

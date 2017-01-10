@@ -46,15 +46,17 @@ class ScriptConfigurationParser(object):
             script_conf.script_repo.username = json_obj['repositoryDetails'].get('username')
             script_conf.script_repo.password = json_obj['repositoryDetails'].get('password')
         if json_obj.get('hostDetails'):
-            json_obj.host_conf = HostConfiguration()
-            json_obj.host_conf.ip = json_obj['hostDetails'].get('ip')
-            json_obj.host_conf.connection_method = json_obj['hostDetails'].get('connectionMethod')
-            json_obj.host_conf.connection_secured = bool_parse(json_obj['hostDetails'].get('connectionSecured'))
-            json_obj.host_conf.username = json_obj['hostDetails'].get('username')
-            json_obj.host_conf.password = json_obj['hostDetails'].get('password')
-            json_obj.host_conf.access_key = json_obj['hostDetails'].get('accessKey')
+            script_conf.host_conf = HostConfiguration()
+            script_conf.host_conf.ip = json_obj['hostDetails'].get('ip')
+            script_conf.host_conf.connection_method = json_obj['hostDetails'].get('connectionMethod')
+            script_conf.host_conf.connection_secured = bool_parse(json_obj['hostDetails'].get('connectionSecured'))
+            script_conf.host_conf.username = json_obj['hostDetails'].get('username')
+            script_conf.host_conf.password = json_obj['hostDetails'].get('password')
+            script_conf.host_conf.access_key = json_obj['hostDetails'].get('accessKey')
             if json_obj['hostDetails'].get('parameters'):
-                json_obj.host_conf.parameters = dict((i['name'], i['value']) for i in json_obj['hostDetails']['parameters'])
+                script_conf.host_conf.parameters = dict((i['name'], i['value']) for i in json_obj['hostDetails']['parameters'])
+
+        return script_conf
 
     @staticmethod
     def _validate(json_obj):
