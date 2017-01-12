@@ -44,26 +44,3 @@ class ErrorMsg(object):
     DELETE_TEMP_FOLDER = 'Failed to delete the temp folder from target machine. Error: ' + os.linesep + '%s'
     COPY_SCRIPT = 'Failed to copy the script to target machine. Error: ' + os.linesep + '%s'
     RUN_SCRIPT = 'Failed to run the script on target machine. Error: ' + os.linesep + '%s'
-
-
-# def throw_error(err):
-#     def func_provider(func):
-#         def func_wrapper(*args, **kwargs):
-#             result = func(*args, **kwargs)
-#             if result.status_code != 0:
-#                 raise Exception(err + os.linesep + result.success)
-#         return func_wrapper
-#     return func_provider
-
-
-class ReservationOutputWriter(object):
-    def __init__(self, session, command_context):
-        """
-        :type session: CloudShellAPISession
-        :type command_context: ResourceCommandContext
-        """
-        self.session = session
-        self.resevation_id = command_context.reservation.reservation_id
-
-    def write(self, msg):
-        self.session.WriteMessageToReservationOutput(self.resevation_id, msg)

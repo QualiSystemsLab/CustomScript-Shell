@@ -2,6 +2,7 @@ import sys
 from StringIO import StringIO
 from paramiko import SSHClient, AutoAddPolicy, RSAKey
 
+from cloudshell.cm.customscript.domain.reservation_output_writer import ReservationOutputWriter
 from cloudshell.cm.customscript.domain.script_configuration import HostConfiguration
 from cloudshell.cm.customscript.domain.script_executor import IScriptExecutor, ErrorMsg
 from cloudshell.cm.customscript.domain.script_file import ScriptFile

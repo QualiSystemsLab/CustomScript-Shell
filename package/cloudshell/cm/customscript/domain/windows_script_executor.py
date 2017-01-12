@@ -2,8 +2,9 @@ import base64
 import winrm
 from logging import Logger
 
+from cloudshell.cm.customscript.domain.reservation_output_writer import ReservationOutputWriter
 from cloudshell.cm.customscript.domain.script_configuration import HostConfiguration
-from cloudshell.cm.customscript.domain.script_executor import IScriptExecutor,  ReservationOutputWriter, ErrorMsg
+from cloudshell.cm.customscript.domain.script_executor import IScriptExecutor, ErrorMsg
 
 
 class WindowsScriptExecutor(IScriptExecutor):
@@ -13,10 +14,9 @@ class WindowsScriptExecutor(IScriptExecutor):
         :type target_host: HostConfiguration
         """
         self.logger = logger
-        auth_tuple = (target_host.username, target_host.password) if target_host.username else None
-        self.session = winrm.Session(target_host.ip, auth=auth_tuple)
+        self.session = winrm.Session(target_host.ip, auth=(target_host.username, target_host.password))
 
-    def create_temp_folder(self, session):
+    def create_temp_folder(self):
         """
         :rtype str
         """
@@ -79,7 +79,7 @@ Remove-Item $path -recurse
         code = txt % args
         self.logger.debug('PowerShellScript:' + code)
         result = self.session.run_ps(code)
-        self.logger.debug('ReturnedCode:' + result.status_code)
+        self.logger.debug('ReturnedCode:' + str(result.status_code))
         self.logger.debug('Stdout:' + result.std_out)
         self.logger.debug('Stderr:' + result.std_err)
         return result
