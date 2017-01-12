@@ -7,6 +7,9 @@ with open(os.path.join('version.txt')) as version_file:
 with open('requirements.txt') as f_required:
     required = f_required.read().splitlines()
 
+with open('external_requirements.txt') as f_required:
+    external_requirements = f_required.read().splitlines()
+
 with open('test_requirements.txt') as f_tests:
     required_for_tests = f_tests.read().splitlines()
 
@@ -20,7 +23,7 @@ setup(
         test_suite='nose.collector',
         test_requires=required_for_tests,
         package_data={'': ['*.txt']},
-        install_requires=required,
+        install_requires=required.update(external_requirements),
         version=version_from_file,
         include_package_data=True,
         keywords="custom-script cloudshell configuration configuration-manager",
