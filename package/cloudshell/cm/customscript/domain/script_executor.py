@@ -28,9 +28,8 @@ class IScriptExecutor(object):
         :type tmp_folder: str
         :type script_file: ScriptFile
         :type output_writer: ReservationOutputWriter
-        :rtype ExecutionResult
         """
-        return None
+        pass
 
     @abstractmethod
     def delete_temp_folder(self, tmp_folder):
@@ -45,13 +44,6 @@ class ErrorMsg(object):
     DELETE_TEMP_FOLDER = 'Failed to delete the temp folder from target machine. Error: ' + os.linesep + '%s'
     COPY_SCRIPT = 'Failed to copy the script to target machine. Error: ' + os.linesep + '%s'
     RUN_SCRIPT = 'Failed to run the script on target machine. Error: ' + os.linesep + '%s'
-
-
-class ExecutionResult(object):
-    def __init__(self, success, output, error):
-        self.error = error
-        self.output = output
-        self.success = success
 
 
 # def throw_error(err):

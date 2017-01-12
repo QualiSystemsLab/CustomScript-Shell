@@ -69,16 +69,16 @@ class ScriptConfigurationParser(object):
         if json_obj.get('repositoryDetails') is None:
             raise SyntaxError(basic_msg + 'Missing "repositoryDetails" node.')
 
-        if json_obj.get('repositoryDetails').get('url') is None:
+        if not json_obj.get('repositoryDetails').get('url'):
             raise SyntaxError(basic_msg + 'Missing/Empty "repositoryDetails.url" node.')
 
-        if json_obj.get('hostDetails') is None:
-            raise SyntaxError(basic_msg + 'Missing "hostDetails" node.')
+        if not json_obj.get('hostDetails'):
+            raise SyntaxError(basic_msg + 'Missing/Empty "hostDetails" node.')
 
-        if json_obj.get('hostDetails').get('ip'):
+        if not json_obj.get('hostDetails').get('ip'):
             raise SyntaxError(basic_msg + 'Missing/Empty "hostDetails.ip" node.')
 
-        if json_obj.get('hostDetails').get('connectionMethod'):
+        if not json_obj.get('hostDetails').get('connectionMethod'):
             raise SyntaxError(basic_msg + 'Missing/Empty "hostDetails.connectionMethod" node.')
 
 
