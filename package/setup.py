@@ -7,6 +7,9 @@ with open(os.path.join('version.txt')) as version_file:
 with open('requirements.txt') as f_required:
     required = f_required.read().splitlines()
 
+with open('external_requirements.txt') as f_required:
+    required.extend(f_required.read().splitlines())
+
 with open('test_requirements.txt') as f_tests:
     required_for_tests = f_tests.read().splitlines()
 
