@@ -1,2 +1,2 @@
-winrm
+pywinrm>=0.2.2
 paramiko>=2.1.1
