@@ -23,12 +23,12 @@ class LinuxScriptExecutor(IScriptExecutor):
         self.logger = logger
         self.session = SSHClient()
         self.session.set_missing_host_key_policy(AutoAddPolicy())
-        if target_host.access_key is None:
+        if target_host.access_key:
             key_stream = StringIO(target_host.access_key)
             key_obj = RSAKey.from_private_key(key_stream)
             self.session.connect(target_host.ip, pkey=key_obj)
         else:
-            self.session.connect(target_host.ip, username=target_host.username, password='qs1234')
+            self.session.connect(target_host.ip, username=target_host.username, password=target_host.password)
 
     def create_temp_folder(self):
         """
@@ -46,7 +46,7 @@ class LinuxScriptExecutor(IScriptExecutor):
         """
         sftp = None
         try:
-            self.session.open_sftp()
+            sftp = self.session.open_sftp()
             file_stream = StringIO(script_file.text)
             sftp.putfo(file_stream, tmp_folder+'/'+script_file.name)
         except IOError as e:
@@ -61,9 +61,11 @@ class LinuxScriptExecutor(IScriptExecutor):
         :type script_file: ScriptFile
         :type output_writer: ReservationOutputWriter
         """
-        result = self._run('sh '+tmp_folder+'/'+script_file)
+        result = self._run('sh '+tmp_folder+'/'+script_file.name)
+        output_writer.write(result.std_out)
+        output_writer.write(result.std_err)
         if not result.success:
-            raise Exception(ErrorMsg.CREATE_TEMP_FOLDER % result.std_err)
+            raise Exception(ErrorMsg.RUN_SCRIPT % result.std_err)
 
     def delete_temp_folder(self, tmp_folder):
         """
