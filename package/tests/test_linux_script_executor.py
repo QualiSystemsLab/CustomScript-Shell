@@ -77,14 +77,14 @@ class TestLinuxScriptExecutor(TestCase):
     def test_run_script_success(self):
         output_writer = Mock()
         self._mock_session_answer(0, 'some output', '')
-        self.executor.run_script('tmp123', ScriptFile('script1', 'some script code'), output_writer)
+        self.executor.run_script('tmp123', ScriptFile('script1', 'some script code'), {'var1':'123'}, output_writer)
         output_writer.write.assert_any_call('some output')
 
     def test_run_script_fail(self):
         output_writer = Mock()
         self._mock_session_answer(1, 'some output', 'some error')
         with self.assertRaises(Exception, ) as e:
-            self.executor.run_script('tmp123', ScriptFile('script1', 'some script code'), output_writer)
+            self.executor.run_script('tmp123', ScriptFile('script1', 'some script code'), None, output_writer)
         self.assertEqual(ErrorMsg.RUN_SCRIPT % 'some error', e.exception.message)
         output_writer.write.assert_any_call('some output')
         output_writer.write.assert_any_call('some error')

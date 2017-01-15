@@ -48,7 +48,7 @@ class CustomScriptShell(object):
                     logger.info('Running script on target machine.')
                     with CloudShellSessionContext(command_context) as session:
                         output_writer = ReservationOutputWriter(session, command_context)
-                        service.run_script(tmp_folder, script_file, output_writer)
+                        service.run_script(tmp_folder, script_file, script_conf.host_conf.parameters or {}, output_writer)
                     logger.info('Done.')
 
                 finally:

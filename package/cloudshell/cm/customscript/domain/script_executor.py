@@ -23,10 +23,11 @@ class IScriptExecutor(object):
         pass
 
     @abstractmethod
-    def run_script(self, tmp_folder, script_file, output_writer):
+    def run_script(self, tmp_folder, script_file, env_vars, output_writer):
         """
         :type tmp_folder: str
         :type script_file: ScriptFile
+        :type env_vars: dict
         :type output_writer: ReservationOutputWriter
         """
         pass

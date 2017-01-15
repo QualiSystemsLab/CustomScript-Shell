@@ -45,13 +45,17 @@ Add-Content -value $data -encoding byte -path $path
         if result.status_code != 0:
             raise Exception(ErrorMsg.COPY_SCRIPT % result.std_err)
 
-    def run_script(self, tmp_folder, script_file, output_writer):
+    def run_script(self, tmp_folder, script_file, env_vars, output_writer):
         """
         :type tmp_folder: str
         :type script_file: ScriptFile
+        :type env_vars: dict
         :type output_writer: ReservationOutputWriter
         """
-        code = """
+        code = ''
+        for key,value in env_vars:
+            code +='\n$env:$s = "$s"'%(key,str(value))
+        code += """
 $path = Join-Path "%s" "%s"
 cmd.exe /c $path
 """
