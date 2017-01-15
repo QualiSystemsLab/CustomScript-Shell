@@ -63,7 +63,7 @@ class LinuxScriptExecutor(IScriptExecutor):
         :type output_writer: ReservationOutputWriter
         """
         code = ''
-        for key, value in env_vars:
+        for key, value in (env_vars or {}).iteritems():
             code += 'export %s=%s;' % (key,str(value))
         code += 'sh '+tmp_folder+'/'+script_file.name
         result = self._run(code)

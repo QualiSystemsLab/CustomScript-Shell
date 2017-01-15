@@ -47,7 +47,7 @@ class TestWindowsScriptExecutor(TestCase):
     def test_run_script_success(self):
         output_writer = Mock()
         self.session.run_ps = Mock(return_value=Result(0, 'some output', 'some error'))
-        self.executor.run_script('tmp123', ScriptFile('script1', 'some script code'), output_writer)
+        self.executor.run_script('tmp123', ScriptFile('script1', 'some script code'), {'var1':'123'}, output_writer)
         output_writer.write.assert_any_call('some output')
         output_writer.write.assert_any_call('some error')
 
@@ -55,7 +55,7 @@ class TestWindowsScriptExecutor(TestCase):
         output_writer = Mock()
         self.session.run_ps = Mock(return_value=Result(1, 'some output', 'some error'))
         with self.assertRaises(Exception, ) as e:
-            self.executor.run_script('tmp123', ScriptFile('script1', 'some script code'), output_writer)
+            self.executor.run_script('tmp123', ScriptFile('script1', 'some script code'), {}, output_writer)
         self.assertEqual(ErrorMsg.RUN_SCRIPT % 'some error', e.exception.message)
         output_writer.write.assert_any_call('some output')
         output_writer.write.assert_any_call('some error')

@@ -53,8 +53,8 @@ Add-Content -value $data -encoding byte -path $path
         :type output_writer: ReservationOutputWriter
         """
         code = ''
-        for key,value in env_vars:
-            code +='\n$env:$s = "$s"'%(key,str(value))
+        for key, value in (env_vars or {}).iteritems():
+            code += '\n$env:%s = "%s"' % (key, str(value))
         code += """
 $path = Join-Path "%s" "%s"
 cmd.exe /c $path
@@ -85,4 +85,3 @@ Remove-Item $path -recurse
         self.logger.debug('Stdout:' + result.std_out)
         self.logger.debug('Stderr:' + result.std_err)
         return result
-
