@@ -75,7 +75,7 @@ class CustomScriptShell(object):
         :type logger: Logger
         :rtype IScriptExecutor
         """
-        if host_conf.connection_method.lower() == 'ssh':
+        if host_conf.connection_method == 'ssh':
             return LinuxScriptExecutor(logger, host_conf)
         else:
             return WindowsScriptExecutor(logger, host_conf)
