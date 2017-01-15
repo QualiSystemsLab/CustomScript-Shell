@@ -49,6 +49,8 @@ class ScriptConfigurationParser(object):
             script_conf.host_conf = HostConfiguration()
             script_conf.host_conf.ip = json_obj['hostDetails'].get('ip')
             script_conf.host_conf.connection_method = json_obj['hostDetails'].get('connectionMethod')
+            if script_conf.host_conf.connection_method:
+                script_conf.host_conf.connection_method = script_conf.host_conf.connection_method.lower()
             script_conf.host_conf.connection_secured = bool_parse(json_obj['hostDetails'].get('connectionSecured'))
             script_conf.host_conf.username = json_obj['hostDetails'].get('username')
             script_conf.host_conf.password = json_obj['hostDetails'].get('password')

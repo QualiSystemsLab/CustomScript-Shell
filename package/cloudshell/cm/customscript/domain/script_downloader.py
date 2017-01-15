@@ -35,7 +35,7 @@ class ScriptDownloader(object):
         """
         self.logger.info('Downloading file from \'%s\' ...' % url)
         response = requests.get(url, auth=(auth.username, auth.password) if auth else None, stream=True)
-        file_name = self.get_filename.get_filename(response)
+        file_name = self._get_filename(response)
         file_txt = ''
 
         for chunk in response.iter_content(ScriptDownloader.CHUNK_SIZE):
@@ -44,7 +44,7 @@ class ScriptDownloader(object):
 
         return ScriptFile(name=file_name, text=file_txt)
 
-    def get_filename(self, response):
+    def _get_filename(self, response):
         file_name = None
         for header_value, pattern in self.filename_patterns.iteritems():
             matching = re.match(pattern, response.headers.get(header_value, ""))

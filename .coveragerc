@@ -3,4 +3,4 @@ omit =
     package/setup.py,
     */__init__.py,
     package/tests/*.py
-    package/cloudshell/cm/customscript/domain/script_file
+    package/cloudshell/cm/customscript/domain/script_executor.py,
