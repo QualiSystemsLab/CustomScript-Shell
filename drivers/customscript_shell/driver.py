@@ -12,7 +12,7 @@ class CustomScriptShellDriver(ResourceDriverInterface):
     def initialize(self, context):
         pass
 
-    def execute_playbook(self, context, script_configuration_json):
+    def execute_script(self, context, script_configuration_json):
         return self.customscript_shell.execute_script(context, script_configuration_json)
 
 
