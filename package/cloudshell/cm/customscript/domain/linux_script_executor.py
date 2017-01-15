@@ -55,13 +55,18 @@ class LinuxScriptExecutor(IScriptExecutor):
             if sftp:
                 sftp.close()
 
-    def run_script(self, tmp_folder, script_file, output_writer):
+    def run_script(self, tmp_folder, script_file, env_vars, output_writer):
         """
         :type tmp_folder: str
         :type script_file: ScriptFile
+        :type env_vars: dict
         :type output_writer: ReservationOutputWriter
         """
-        result = self._run('sh '+tmp_folder+'/'+script_file.name)
+        code = ''
+        for key, value in (env_vars or {}).iteritems():
+            code += 'export %s=%s;' % (key,str(value))
+        code += 'sh '+tmp_folder+'/'+script_file.name
+        result = self._run(code)
         output_writer.write(result.std_out)
         output_writer.write(result.std_err)
         if not result.success:
