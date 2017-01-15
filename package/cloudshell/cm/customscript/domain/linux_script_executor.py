@@ -10,10 +10,10 @@ from cloudshell.cm.customscript.domain.script_file import ScriptFile
 
 class LinuxScriptExecutor(IScriptExecutor):
     class ExecutionResult(object):
-        def __init__(self, std_out, std_err):
+        def __init__(self, exit_code, std_out, std_err):
             self.std_err = std_err
             self.std_out = std_out
-            self.success = not std_err
+            self.success = exit_code == 0
 
     def __init__(self, logger, target_host):
         """
@@ -79,6 +79,10 @@ class LinuxScriptExecutor(IScriptExecutor):
         code = txt % args
         self.logger.debug('BashScript:' + code)
         stdin, stdout, stderr = self.session.exec_command(code)
-        self.logger.debug('Stdout:' + stdout)
-        self.logger.debug('Stderr:' + stderr)
-        return LinuxScriptExecutor.ExecutionResult(stdout, stderr)
+        exit_code = stdout.channel.recv_exit_status()
+        stdout_txt = ''.join(stdout.readlines())
+        stderr_txt = ''.join(stderr.readlines())
+        self.logger.debug('ReturnedCode:' + str(exit_code))
+        self.logger.debug('Stdout:' + stdout_txt)
+        self.logger.debug('Stderr:' + stderr_txt)
+        return LinuxScriptExecutor.ExecutionResult(exit_code, stdout_txt, stderr_txt)
