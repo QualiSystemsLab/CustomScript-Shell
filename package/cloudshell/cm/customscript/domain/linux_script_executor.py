@@ -37,7 +37,7 @@ class LinuxScriptExecutor(IScriptExecutor):
         result = self._run('mktemp -d')
         if not result.success:
             raise Exception(ErrorMsg.CREATE_TEMP_FOLDER % result.std_err)
-        return result.std_out
+        return result.std_out.rstrip('\n')
 
     def copy_script(self, tmp_folder, script_file):
         """

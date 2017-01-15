@@ -21,16 +21,14 @@ class WindowsScriptExecutor(IScriptExecutor):
         :rtype str
         """
         code = """
-$folderName = [System.Guid]::NewGuid().ToString()
-$parent     = $env:Temp
-$fullPath   = Join-Path $parent $folderName
-New-Item $path -type directory | Out-Null
+$fullPath = Join-Path $env:Temp ([System.Guid]::NewGuid().ToString())
+New-Item $fullPath -type directory | Out-Null
 Write-Output $fullPath
         """
         result = self._run_ps(code)
         if result.status_code != 0:
             raise Exception(ErrorMsg.CREATE_TEMP_FOLDER % result.std_err)
-        return result.std_out
+        return result.std_out.rstrip('\r\n')
 
     def copy_script(self, tmp_folder, script_file):
         """
