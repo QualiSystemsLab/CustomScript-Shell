@@ -23,41 +23,47 @@ class TestScriptConfiguration(TestCase):
             ScriptConfigurationParser.json_to_object(json)
         self.assertIn('Missing/Empty "repositoryDetails.url" node.', context.exception.message)
 
-    def test_cannot_parse_json_without_host_detalis(self):
+    def test_cannot_parse_json_without_hosts_detalis(self):
         json = '{"repositoryDetails":{"url":"someurl"}}'
         with self.assertRaises(SyntaxError) as context:
             ScriptConfigurationParser.json_to_object(json)
-        self.assertIn('Missing/Empty "hostDetails" node.', context.exception.message)
+        self.assertIn('Missing/Empty "hostsDetails" node.', context.exception.message)
 
-    def test_cannot_parse_json_with_an_empty_host_detalis(self):
-        json = '{"repositoryDetails":{"url":"someurl"},"hostDetails":{}}'
+    def test_cannot_parse_json_with_empty_host_detalis(self):
+        json = '{"repositoryDetails":{"url":"someurl"},"hostsDetails":[]}'
         with self.assertRaises(SyntaxError) as context:
             ScriptConfigurationParser.json_to_object(json)
-        self.assertIn('Missing/Empty "hostDetails" node.', context.exception.message)
+        self.assertIn('Missing/Empty "hostsDetails" node.', context.exception.message)
+
+    def test_cannot_parse_json_with_multiple_hosts_detalis(self):
+        json = '{"repositoryDetails":{"url":"someurl"},"hostsDetails":[{},{}]}'
+        with self.assertRaises(SyntaxError) as context:
+            ScriptConfigurationParser.json_to_object(json)
+        self.assertIn('Node "hostsDetails" must contain only one item.', context.exception.message)
 
     def test_cannot_parse_json_with_host_without_an_ip(self):
-        json = '{"repositoryDetails":{"url":"someurl"},"hostDetails":{"someNode":""}}'
+        json = '{"repositoryDetails":{"url":"someurl"},"hostsDetails":[{"someNode":""}]}'
         with self.assertRaises(SyntaxError) as context:
             ScriptConfigurationParser.json_to_object(json)
-        self.assertIn('Missing/Empty "hostDetails.ip" node.', context.exception.message)
+        self.assertIn('Missing/Empty "hostsDetails[0].ip" node.', context.exception.message)
 
     def test_cannot_parse_json_with_host_with_an_empty_ip(self):
-        json = '{"repositoryDetails":{"url":"someurl"},"hostDetails":{"ip":""}}'
+        json = '{"repositoryDetails":{"url":"someurl"},"hostsDetails":[{"ip":""}]}'
         with self.assertRaises(SyntaxError) as context:
             ScriptConfigurationParser.json_to_object(json)
-        self.assertIn('Missing/Empty "hostDetails.ip" node.', context.exception.message)
+        self.assertIn('Missing/Empty "hostsDetails[0].ip" node.', context.exception.message)
 
     def test_cannot_parse_json_with_host_without_an_connection_method(self):
-        json = '{"repositoryDetails":{"url":"someurl"},"hostDetails":{"ip":"x.x.x.x"}}'
+        json = '{"repositoryDetails":{"url":"someurl"},"hostsDetails":[{"ip":"x.x.x.x"}]}'
         with self.assertRaises(SyntaxError) as context:
             ScriptConfigurationParser.json_to_object(json)
-        self.assertIn('Missing/Empty "hostDetails.connectionMethod" node.', context.exception.message)
+        self.assertIn('Missing/Empty "hostsDetails[0].connectionMethod" node.', context.exception.message)
 
     def test_cannot_parse_json_with_host_with_an_empty_connection_method(self):
-        json = '{"repositoryDetails":{"url":"someurl"},"hostDetails":{"ip":"x.x.x.x", "connectionMethod":""}}'
+        json = '{"repositoryDetails":{"url":"someurl"},"hostsDetails":[{"ip":"x.x.x.x", "connectionMethod":""}]}'
         with self.assertRaises(SyntaxError) as context:
             ScriptConfigurationParser.json_to_object(json)
-        self.assertIn('Missing/Empty "hostDetails.connectionMethod" node.', context.exception.message)
+        self.assertIn('Missing/Empty "hostsDetails[0].connectionMethod" node.', context.exception.message)
 
     def test_sanity(self):
         json = """
@@ -67,14 +73,14 @@ class TestScriptConfiguration(TestCase):
         "username": "C",
         "password": "D"
     },
-    "hostDetails": {
+    "hostsDetails": [{
         "ip": "E",
         "username": "F",
         "password": "G",
         "accessKey": "H",
         "connectionMethod": "IiIiI",
         "parameters": [{"name":"K11","value":"K12"}, {"name":"K21","value":"K22"}]
-    }
+    }]
 }"""
         conf = ScriptConfigurationParser.json_to_object(json)
         self.assertEquals("B", conf.script_repo.url)
