@@ -59,7 +59,7 @@ class TestCustomScriptShell(TestCase):
         self.selector_get.assert_called_with(self.script_conf.host_conf, Any())
 
     def test_flow(self):
-        script_file = Mock()
+        script_file = ScriptFile('name','text')
         env_vars = Mock()
         self.script_conf.host_conf.parameters = env_vars
         self.downloader.return_value = script_file
