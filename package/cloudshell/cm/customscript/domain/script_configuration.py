@@ -41,22 +41,22 @@ class ScriptConfigurationParser(object):
         ScriptConfigurationParser._validate(json_obj)
 
         script_conf = ScriptConfiguration()
-        if json_obj.get('repositoryDetails'):
-            script_conf.script_repo.url = json_obj['repositoryDetails'].get('url')
-            script_conf.script_repo.username = json_obj['repositoryDetails'].get('username')
-            script_conf.script_repo.password = json_obj['repositoryDetails'].get('password')
-        if json_obj.get('hostDetails'):
-            script_conf.host_conf = HostConfiguration()
-            script_conf.host_conf.ip = json_obj['hostDetails'].get('ip')
-            script_conf.host_conf.connection_method = json_obj['hostDetails'].get('connectionMethod')
-            if script_conf.host_conf.connection_method:
-                script_conf.host_conf.connection_method = script_conf.host_conf.connection_method.lower()
-            script_conf.host_conf.connection_secured = bool_parse(json_obj['hostDetails'].get('connectionSecured'))
-            script_conf.host_conf.username = json_obj['hostDetails'].get('username')
-            script_conf.host_conf.password = json_obj['hostDetails'].get('password')
-            script_conf.host_conf.access_key = json_obj['hostDetails'].get('accessKey')
-            if json_obj['hostDetails'].get('parameters'):
-                script_conf.host_conf.parameters = dict((i['name'], i['value']) for i in json_obj['hostDetails']['parameters'])
+
+        repo = json_obj['repositoryDetails']
+        script_conf.script_repo.url = repo.get('url')
+        script_conf.script_repo.username = repo.get('username')
+        script_conf.script_repo.password = repo.get('password')
+
+        host = json_obj['hostsDetails'][0]
+        script_conf.host_conf = HostConfiguration()
+        script_conf.host_conf.ip = host.get('ip')
+        script_conf.host_conf.connection_method = host['connectionMethod'].lower() if host.get('connectionMethod') else None
+        script_conf.host_conf.connection_secured = bool_parse(host.get('connectionSecured'))
+        script_conf.host_conf.username = host.get('username')
+        script_conf.host_conf.password = host.get('password')
+        script_conf.host_conf.access_key = host.get('accessKey')
+        if host.get('parameters'):
+            script_conf.host_conf.parameters = dict((i['name'], i['value']) for i in host['parameters'])
 
         return script_conf
 
@@ -74,14 +74,17 @@ class ScriptConfigurationParser(object):
         if not json_obj.get('repositoryDetails').get('url'):
             raise SyntaxError(basic_msg + 'Missing/Empty "repositoryDetails.url" node.')
 
-        if not json_obj.get('hostDetails'):
-            raise SyntaxError(basic_msg + 'Missing/Empty "hostDetails" node.')
+        if not json_obj.get('hostsDetails'):
+            raise SyntaxError(basic_msg + 'Missing/Empty "hostsDetails" node.')
 
-        if not json_obj.get('hostDetails').get('ip'):
-            raise SyntaxError(basic_msg + 'Missing/Empty "hostDetails.ip" node.')
+        if len(json_obj.get('hostsDetails')) > 1:
+            raise SyntaxError(basic_msg + 'Node "hostsDetails" must contain only one item.')
 
-        if not json_obj.get('hostDetails').get('connectionMethod'):
-            raise SyntaxError(basic_msg + 'Missing/Empty "hostDetails.connectionMethod" node.')
+        if not json_obj.get('hostsDetails')[0].get('ip'):
+            raise SyntaxError(basic_msg + 'Missing/Empty "hostsDetails[0].ip" node.')
+
+        if not json_obj.get('hostsDetails')[0].get('connectionMethod'):
+            raise SyntaxError(basic_msg + 'Missing/Empty "hostsDetails[0].connectionMethod" node.')
 
 
 def bool_parse(b):

@@ -33,7 +33,6 @@ class ScriptDownloader(object):
         :type auth: HttpAuth
         :rtype ScriptFile
         """
-        self.logger.info('Downloading file from \'%s\' ...' % url)
         response = requests.get(url, auth=(auth.username, auth.password) if auth else None, stream=True)
         file_name = self._get_filename(response)
         file_txt = ''
@@ -58,5 +57,5 @@ class ScriptDownloader(object):
             if matching:
                 file_name = matching.group('filename')
         if not file_name:
-            raise Exception("script file of supported types: '.sh', '.bash', '.cmd', or '.bat' was not found")
+            raise Exception("Script file of supported types: '.sh', '.bash', '.cmd', or '.bat' was not found")
         return file_name.strip()

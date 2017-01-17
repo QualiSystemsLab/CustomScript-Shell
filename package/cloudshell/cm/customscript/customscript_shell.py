@@ -31,27 +31,29 @@ class CustomScriptShell(object):
                 logger.debug('\'execute_script\' is called with the configuration json: \n' + script_conf_json)
                 script_conf = ScriptConfigurationParser.json_to_object(script_conf_json)
 
+                logger.info('Downloading file from \'%s\' ...' % script_conf.script_repo.url)
                 script_file = self._download_script(script_conf.script_repo, logger)
+                logger.info('Done (%s, %s chars).' % (script_file.name, len(script_file.text)))
 
                 service = ScriptExecutorSelector.get(script_conf.host_conf, logger)
 
-                logger.info('Creating temp folder on target machine.')
+                logger.info('Creating temp folder on target machine ...')
                 tmp_folder = service.create_temp_folder()
-                logger.info('Done.')
+                logger.info('Done (%s).' % tmp_folder)
 
                 try:
-                    logger.info('Copying script to target machine.')
+                    logger.info('Copying "%s" (% chars) to "%s" target machine ...'%(script_file.name,len(script_file.text), tmp_folder))
                     service.copy_script(tmp_folder, script_file)
                     logger.info('Done.')
 
-                    logger.info('Running script on target machine.')
+                    logger.info('Running "%s" on target machine ...' % script_file.name)
                     with CloudShellSessionContext(command_context) as session:
                         output_writer = ReservationOutputWriter(session, command_context)
                         service.run_script(tmp_folder, script_file, script_conf.host_conf.parameters, output_writer)
                     logger.info('Done.')
 
                 finally:
-                    logger.info('Deleting temp folder from target machine.')
+                    logger.info('Deleting "%s" folder from target machine ...' % tmp_folder)
                     service.delete_temp_folder(tmp_folder)
                     logger.info('Done.')
 
