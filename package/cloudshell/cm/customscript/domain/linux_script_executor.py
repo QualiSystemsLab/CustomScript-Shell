@@ -30,6 +30,30 @@ class LinuxScriptExecutor(IScriptExecutor):
         else:
             self.session.connect(target_host.ip, username=target_host.username, password=target_host.password)
 
+    def execute(self, script_file, env_vars, output_writer):
+        """
+        :type script_file: ScriptFile
+        :type output_writer: ReservationOutputWriter
+        """
+        self.logger.info('Creating temp folder on target machine ...')
+        tmp_folder = self.create_temp_folder()
+        self.logger.info('Done (%s).' % tmp_folder)
+
+        try:
+            self.logger.info('Copying "%s" (% chars) to "%s" target machine ...' % (
+            script_file.name, len(script_file.text), tmp_folder))
+            self.copy_script(tmp_folder, script_file)
+            self.logger.info('Done.')
+
+            self.logger.info('Running "%s" on target machine ...' % script_file.name)
+            self.run_script(tmp_folder, script_file, env_vars, output_writer)
+            self.logger.info('Done.')
+
+        finally:
+            self.logger.info('Deleting "%s" folder from target machine ...' % tmp_folder)
+            self.delete_temp_folder(tmp_folder)
+            self.logger.info('Done.')
+
     def create_temp_folder(self):
         """
         :rtype str

@@ -23,52 +23,21 @@ class TestWindowsScriptExecutor(TestCase):
     def tearDown(self):
         self.session_patcher.stop()
 
-    def test_create_temp_folder_success(self):
-        self.session.run_ps = Mock(return_value=Result(0,'tmp123',''))
-        result = self.executor.create_temp_folder()
-        self.assertEqual('tmp123', result)
-
-    def test_create_temp_folder_fail(self):
-        self.session.run_ps = Mock(return_value=Result(1,'','some error'))
-        with self.assertRaises(Exception) as e:
-            self.executor.create_temp_folder()
-        self.assertEqual(ErrorMsg.CREATE_TEMP_FOLDER % 'some error', e.exception.message)
-
-    def test_copy_script_success(self):
-        self.session.run_ps = Mock(return_value=Result(0,'',''))
-        self.executor.copy_script('tmp123', ScriptFile('script1','some script code'))
-
-    def test_copy_script_fail(self):
-        self.session.run_ps = Mock(return_value=Result(1,'','some error'))
-        with self.assertRaises(Exception) as e:
-            self.executor.copy_script('tmp123', ScriptFile('script1','some script code'))
-        self.assertEqual(ErrorMsg.COPY_SCRIPT % 'some error', e.exception.message)
-
-    def test_run_script_success(self):
+    def test_execute_success(self):
         output_writer = Mock()
         self.session.run_ps = Mock(return_value=Result(0, 'some output', 'some error'))
-        self.executor.run_script('tmp123', ScriptFile('script1', 'some script code'), {'var1':'123'}, output_writer)
+        self.executor.execute(ScriptFile('script1', 'some script code'), {'var1':'123'}, output_writer)
         output_writer.write.assert_any_call('some output')
         output_writer.write.assert_any_call('some error')
 
-    def test_run_script_fail(self):
+    def test_execute_fail(self):
         output_writer = Mock()
         self.session.run_ps = Mock(return_value=Result(1, 'some output', 'some error'))
         with self.assertRaises(Exception, ) as e:
-            self.executor.run_script('tmp123', ScriptFile('script1', 'some script code'), {}, output_writer)
+            self.executor.execute(ScriptFile('script1', 'some script code'), {}, output_writer)
         self.assertEqual(ErrorMsg.RUN_SCRIPT % 'some error', e.exception.message)
         output_writer.write.assert_any_call('some output')
         output_writer.write.assert_any_call('some error')
-
-    def test_delete_temp_folder_success(self):
-        self.session.run_ps = Mock(return_value=Result(0,'',''))
-        self.executor.delete_temp_folder('tmp123')
-
-    def test_delete_temp_folder_fail(self):
-        self.session.run_ps = Mock(return_value=Result(1,'','some error'))
-        with self.assertRaises(Exception) as e:
-            self.executor.delete_temp_folder('tmp123')
-        self.assertEqual(ErrorMsg.DELETE_TEMP_FOLDER % 'some error', e.exception.message)
 
 
 class Result(object):
