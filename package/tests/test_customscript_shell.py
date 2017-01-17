@@ -58,34 +58,41 @@ class TestCustomScriptShell(TestCase):
 
         self.selector_get.assert_called_with(self.script_conf.host_conf, Any())
 
-    def test_flow(self):
-        script_file = ScriptFile('name','text')
-        env_vars = Mock()
-        self.script_conf.host_conf.parameters = env_vars
-        self.downloader.return_value = script_file
-        self.executor.create_temp_folder.return_value = 'tmp123'
-
+    def test_execute_is_called(self):
         CustomScriptShell().execute_script(self.context, '')
 
-        self.executor.create_temp_folder.assert_called()
-        self.executor.copy_script.assert_called_with('tmp123', script_file)
-        self.executor.run_script.assert_called_with('tmp123', script_file, env_vars, Any(lambda x: isinstance(x, ReservationOutputWriter)))
-        self.executor.delete_temp_folder.assert_called_with('tmp123')
+        self.selector_get.assert_called_with(self.script_conf.host_conf, Any())
 
-    def test_delete_temp_folder_when_copying_fails(self):
-        self.executor.create_temp_folder.return_value = 'tmp123'
-        self.executor.copy_script.side_effect = Exception()
+        self.executor.execute.assert_called_once()
 
-        with self.assertRaises(Exception):
-            CustomScriptShell().execute_script(self.context, '')
+            # def test_flow(self):
+    #     script_file = ScriptFile('name','text')
+    #     env_vars = Mock()
+    #     self.script_conf.host_conf.parameters = env_vars
+    #     self.downloader.return_value = script_file
+    #     self.executor.create_temp_folder.return_value = 'tmp123'
+    #
+    #     CustomScriptShell().execute_script(self.context, '')
+    #
+    #     self.executor.create_temp_folder.assert_called()
+    #     self.executor.copy_script.assert_called_with('tmp123', script_file)
+    #     self.executor.run_script.assert_called_with('tmp123', script_file, env_vars, Any(lambda x: isinstance(x, ReservationOutputWriter)))
+    #     self.executor.delete_temp_folder.assert_called_with('tmp123')
 
-        self.executor.delete_temp_folder.assert_called_with('tmp123')
-
-    def test_delete_temp_folder_when_running_fails(self):
-        self.executor.create_temp_folder.return_value = 'tmp123'
-        self.executor.run_script.side_effect = Exception()
-
-        with self.assertRaises(Exception):
-            CustomScriptShell().execute_script(self.context, '')
-
-        self.executor.delete_temp_folder.assert_called_with('tmp123')
+    # def test_delete_temp_folder_when_copying_fails(self):
+    #     self.executor.create_temp_folder.return_value = 'tmp123'
+    #     self.executor.copy_script.side_effect = Exception()
+    #
+    #     with self.assertRaises(Exception):
+    #         CustomScriptShell().execute_script(self.context, '')
+    #
+    #     self.executor.delete_temp_folder.assert_called_with('tmp123')
+    #
+    # def test_delete_temp_folder_when_running_fails(self):
+    #     self.executor.create_temp_folder.return_value = 'tmp123'
+    #     self.executor.run_script.side_effect = Exception()
+    #
+    #     with self.assertRaises(Exception):
+    #         CustomScriptShell().execute_script(self.context, '')
+    #
+    #     self.executor.delete_temp_folder.assert_called_with('tmp123')

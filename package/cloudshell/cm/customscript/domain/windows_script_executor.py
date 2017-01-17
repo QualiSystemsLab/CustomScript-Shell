@@ -16,70 +16,29 @@ class WindowsScriptExecutor(IScriptExecutor):
         self.logger = logger
         self.session = winrm.Session(target_host.ip, auth=(target_host.username, target_host.password))
 
-    def create_temp_folder(self):
-        """
-        :rtype str
-        """
-        code = """
-$fullPath = Join-Path $env:Temp ([System.Guid]::NewGuid().ToString())
-New-Item $fullPath -type directory | Out-Null
-Write-Output $fullPath
-        """
-        result = self._run_ps(code)
-        if result.status_code != 0:
-            raise Exception(ErrorMsg.CREATE_TEMP_FOLDER % result.std_err)
-        return result.std_out.rstrip('\r\n')
-
-    def copy_script(self, tmp_folder, script_file):
-        """
-        :type tmp_folder: str
-        :type script_file: ScriptFile
-        """
-        encoded_script_txt = base64.b64encode(script_file.text.encode("utf-8"))
-        code = """
-$path   = Join-Path "%s" "%s"
-$data   = [System.Convert]::FromBase64String("%s")
-Add-Content -value $data -encoding byte -path $path
-"""
-        result = self._run_ps(code, tmp_folder, script_file.name, encoded_script_txt)
-        if result.status_code != 0:
-            raise Exception(ErrorMsg.COPY_SCRIPT % result.std_err)
-
-    def run_script(self, tmp_folder, script_file, env_vars, output_writer):
+    def execute(self, script_file, env_vars, output_writer):
         """
         :type tmp_folder: str
         :type script_file: ScriptFile
         :type env_vars: dict
         :type output_writer: ReservationOutputWriter
         """
-        code = ''
-        for key, value in (env_vars or {}).iteritems():
-            code += '\n$env:%s = "%s"' % (key, str(value))
-        code += """
-$path = Join-Path "%s" "%s"
-cmd.exe /c $path
-"""
-        result = self._run_ps(code, tmp_folder, script_file.name)
+        code = script_file.text
+        self.logger.debug('PowerShellScript:' + code)
+        if env_vars:
+            encoded_script = base64.b64encode(script_file.text.encode('utf_16_le')).decode('ascii')
+            code = '\n'.join(['$env:%s="%s"'%(k, str(v)) for k,v in env_vars.iteritems()])
+            self.logger.debug('AddingEnvVars:' + code)
+            code += '\npowershell -encodedcommand %s' % encoded_script
+
+        result = self._run_ps(code)
         output_writer.write(result.std_out)
         output_writer.write(result.std_err)
         if result.status_code != 0:
             raise Exception(ErrorMsg.RUN_SCRIPT % result.std_err)
 
-    def delete_temp_folder(self, tmp_folder):
-        """
-        :type tmp_folder: str
-        """
-        code = """
-$path = "%s"
-Remove-Item $path -recurse
-"""
-        result = self._run_ps(code % tmp_folder)
-        if result.status_code != 0:
-            raise Exception(ErrorMsg.DELETE_TEMP_FOLDER % result.std_err)
 
-    def _run_ps(self, txt, *args):
-        code = txt % args
-        self.logger.debug('PowerShellScript:' + code)
+    def _run_ps(self, code):
         result = self.session.run_ps(code)
         self.logger.debug('ReturnedCode:' + str(result.status_code))
         self.logger.debug('Stdout:' + result.std_out)

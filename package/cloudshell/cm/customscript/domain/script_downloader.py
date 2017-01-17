@@ -21,7 +21,7 @@ class ScriptDownloader(object):
         :type logger: Logger
         """
         self.logger = logger
-        self.filename_pattern = "(?P<filename>\s*[\w,\s-]+\.(sh|bash|cmd|bat)\s*)"
+        self.filename_pattern = "(?P<filename>\s*[\w,\s-]+\.(sh|bash|ps1)\s*)"
         self.filename_patterns = {
             "content-disposition": "\s*((?i)inline|attachment|extension-token)\s*;\s*filename=" + self.filename_pattern,
             "x-artifactory-filename": self.filename_pattern
@@ -57,5 +57,5 @@ class ScriptDownloader(object):
             if matching:
                 file_name = matching.group('filename')
         if not file_name:
-            raise Exception("Script file of supported types: '.sh', '.bash', '.cmd', or '.bat' was not found")
+            raise Exception("Script file of supported types: '.sh', '.bash', '.ps1' was not found")
         return file_name.strip()

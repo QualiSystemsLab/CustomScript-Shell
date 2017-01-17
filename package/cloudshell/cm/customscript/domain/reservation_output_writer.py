@@ -10,4 +10,5 @@ class ReservationOutputWriter(object):
         self.resevation_id = command_context.reservation.reservation_id
 
     def write(self, msg):
-        self.session.WriteMessageToReservationOutput(self.resevation_id, msg)
+        if msg:
+            self.session.WriteMessageToReservationOutput(self.resevation_id, msg)
