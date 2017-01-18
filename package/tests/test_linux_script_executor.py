@@ -1,5 +1,6 @@
 from unittest import TestCase
 from mock import patch, Mock
+from scpclient import SCPError
 
 from cloudshell.cm.customscript.domain.script_configuration import HostConfiguration
 from cloudshell.cm.customscript.domain.script_executor import ErrorMsg
@@ -13,16 +14,22 @@ class TestLinuxScriptExecutor(TestCase):
     def setUp(self):
         self.logger = Mock()
         self.session = Mock()
+        self.scp = Mock()
+        self.scp_ctor = Mock()
         self.host = HostConfiguration()
         self.host.ip = "1.2.3.4"
 
         self.session_patcher = patch('cloudshell.cm.customscript.domain.linux_script_executor.SSHClient')
         self.session_patcher.start().return_value = self.session
+        self.scp_patcher = patch('cloudshell.cm.customscript.domain.linux_script_executor.Write')
+        self.scp_ctor = self.scp_patcher.start()
+        self.scp_ctor.return_value = self.scp
 
         self.executor = LinuxScriptExecutor(self.logger, self.host)
 
     def tearDown(self):
         self.session_patcher.stop()
+        self.scp_patcher.stop()
 
     def _mock_session_answer(self, exit_code, stdout, stderr):
         stdout_mock = Mock()
@@ -58,21 +65,20 @@ class TestLinuxScriptExecutor(TestCase):
         self.assertEqual(ErrorMsg.CREATE_TEMP_FOLDER % 'some error', e.exception.message)
 
     def test_copy_script_success(self):
-        sftp = Mock()
-        self.session.open_sftp = Mock(return_value=sftp)
+        transport = Mock()
+        self.session.get_transport.return_value = transport
         self.executor.copy_script('tmp123', ScriptFile('script1','some script code'))
-        sftp.putfo.assert_called_once_with(Any(lambda x: x.getvalue() == 'some script code'), 'tmp123/script1')
-        sftp.close.assert_called_once()
+        self.scp_ctor.assert_called_once_with(transport, 'tmp123')
+        self.scp.send.assert_called_once_with(Any(lambda x: x.getvalue() == 'some script code'),'script1', '0601', 16)
+        self.scp.close.assert_called_once()
 
     def test_copy_script_fail(self):
-        sftp = Mock()
-        sftp.putfo.side_effect = IOError('some error')
-        self.session.open_sftp = Mock(return_value=sftp)
+        self.scp.send.side_effect = SCPError('some error')
         with self.assertRaises(Exception) as e:
             self.executor.copy_script('tmp123', ScriptFile('script1','some script code'))
         self.assertIn(ErrorMsg.COPY_SCRIPT % '', e.exception.message)
         self.assertIn('some error', e.exception.message)
-        sftp.close.assert_called_once()
+        self.scp.close.assert_called_once()
 
     def test_run_script_success(self):
         output_writer = Mock()
