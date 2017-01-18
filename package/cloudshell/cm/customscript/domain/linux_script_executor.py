@@ -1,6 +1,8 @@
 import sys
 from StringIO import StringIO
 from paramiko import SSHClient, AutoAddPolicy, RSAKey
+from scp import SCPClient
+from scpclient import Write, SCPError
 
 from cloudshell.cm.customscript.domain.reservation_output_writer import ReservationOutputWriter
 from cloudshell.cm.customscript.domain.script_configuration import HostConfiguration
@@ -68,16 +70,17 @@ class LinuxScriptExecutor(IScriptExecutor):
         :type tmp_folder: str
         :type script_file: ScriptFile
         """
-        sftp = None
+        file_stream = StringIO(script_file.text)
+        file_size = len(file_stream.getvalue())
+        scp = None
         try:
-            sftp = self.session.open_sftp()
-            file_stream = StringIO(script_file.text)
-            sftp.putfo(file_stream, tmp_folder+'/'+script_file.name)
-        except IOError as e:
+            scp = Write(self.session.get_transport(), tmp_folder)
+            scp.send(file_stream, script_file.name, '0601', file_size)
+        except SCPError as e:
             raise Exception,ErrorMsg.COPY_SCRIPT % str(e),sys.exc_info()[2]
         finally:
-            if sftp:
-                sftp.close()
+            if scp:
+                scp.close()
 
     def run_script(self, tmp_folder, script_file, env_vars, output_writer):
         """
