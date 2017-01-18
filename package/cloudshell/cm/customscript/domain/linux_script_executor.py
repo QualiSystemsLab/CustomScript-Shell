@@ -1,7 +1,6 @@
 import sys
 from StringIO import StringIO
 from paramiko import SSHClient, AutoAddPolicy, RSAKey
-from scp import SCPClient
 from scpclient import Write, SCPError
 
 from cloudshell.cm.customscript.domain.reservation_output_writer import ReservationOutputWriter
