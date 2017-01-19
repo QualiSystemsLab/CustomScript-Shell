@@ -90,7 +90,7 @@ class LinuxScriptExecutor(IScriptExecutor):
         """
         code = ''
         for key, value in (env_vars or {}).iteritems():
-            code += 'export %s=%s;' % (key,str(value))
+            code += 'export %s=%s;' % (key,self._escape(value))
         code += 'sh '+tmp_folder+'/'+script_file.name
         result = self._run(code)
         output_writer.write(result.std_out)
@@ -117,3 +117,7 @@ class LinuxScriptExecutor(IScriptExecutor):
         self.logger.debug('Stdout:' + stdout_txt)
         self.logger.debug('Stderr:' + stderr_txt)
         return LinuxScriptExecutor.ExecutionResult(exit_code, stdout_txt, stderr_txt)
+
+    def _escape(self, value):
+        escaped_str = "$'" + '\\x' + '\\x'.join([x.encode("hex") for x in str(value).encode("ascii")]) + "'"
+        return escaped_str
