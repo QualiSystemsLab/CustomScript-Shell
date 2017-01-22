@@ -14,7 +14,10 @@ class WindowsScriptExecutor(IScriptExecutor):
         :type target_host: HostConfiguration
         """
         self.logger = logger
-        self.session = winrm.Session(target_host.ip, auth=(target_host.username, target_host.password))
+        if target_host.connection_secured:
+            self.session = winrm.Session(target_host.ip, auth=(target_host.username, target_host.password), transport='ssl')
+        else:
+            self.session = winrm.Session(target_host.ip, auth=(target_host.username, target_host.password))
 
     def execute(self, script_file, env_vars, output_writer):
         """
