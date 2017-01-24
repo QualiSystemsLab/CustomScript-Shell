@@ -1,4 +1,8 @@
 import base64
+
+import time
+from multiprocessing.pool import ThreadPool
+
 import winrm
 from logging import Logger
 
@@ -16,6 +20,7 @@ class WindowsScriptExecutor(IScriptExecutor):
         """
         self.logger = logger
         self.cancel_sampler = cancel_sampler
+        self.pool = ThreadPool(processes=1)
         if target_host.connection_secured:
             self.session = winrm.Session(target_host.ip, auth=(target_host.username, target_host.password), transport='ssl')
         else:
@@ -28,15 +33,14 @@ class WindowsScriptExecutor(IScriptExecutor):
         :type env_vars: dict
         :type output_writer: ReservationOutputWriter
         """
-        code = script_file.text
-        self.logger.debug('PowerShellScript:' + code)
-        if env_vars:
-            encoded_script = base64.b64encode(script_file.text.encode('utf_16_le')).decode('ascii')
-            code = '\n'.join(['$env:%s="%s"'%(k, str(v)) for k,v in env_vars.iteritems()])
-            self.logger.debug('AddingEnvVars:' + code)
-            code += '\npowershell -encodedcommand %s' % encoded_script
+        self.logger.debug('PowerShellScript:' + script_file.text)
+        code = ''
+        for key, value in (env_vars or {}).iteritems():
+            code += 'set %s="%s" &&' % (key, str(value))
+        encoded_script = base64.b64encode(script_file.text.encode('utf_16_le')).decode('ascii')
+        code += '\npowershell -encodedcommand %s' % encoded_script
 
-        result = self._run_ps(code)
+        result = self._run_cancelable(code)
         output_writer.write(result.std_out)
         output_writer.write(result.std_err)
         if result.status_code != 0:
@@ -45,6 +49,28 @@ class WindowsScriptExecutor(IScriptExecutor):
 
     def _run_ps(self, code):
         result = self.session.run_ps(code)
+        self.logger.debug('ReturnedCode:' + str(result.status_code))
+        self.logger.debug('Stdout:' + result.std_out)
+        self.logger.debug('Stderr:' + result.std_err)
+        return result
+
+    def _run_cancelable(self, code):
+        shell_id = self.session.protocol.open_shell()
+        command_id = self.session.protocol.run_command(shell_id, code)
+
+        async_result = self.pool.apply_async(self.session.protocol.get_command_output, kwds={'shell_id': shell_id, 'command_id': command_id})
+        try:
+            while not async_result.ready():
+                if self.cancel_sampler.is_cancelled():
+                    self.cancel_sampler.throw()
+                time.sleep(1)
+            result = winrm.Response(async_result.get())
+            if len(result.std_err):
+                result.std_err = self.session._clean_error_msg(result.std_err)
+        finally:
+            self.session.protocol.cleanup_command(shell_id, command_id)
+            self.session.protocol.close_shell(shell_id)
+
         self.logger.debug('ReturnedCode:' + str(result.status_code))
         self.logger.debug('Stdout:' + result.std_out)
         self.logger.debug('Stderr:' + result.std_err)

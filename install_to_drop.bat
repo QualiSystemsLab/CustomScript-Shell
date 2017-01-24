@@ -1,6 +1,3 @@
-cd drivers
-call pack_install.bat
-cd ..\
 call killall.bat
 cd package
 del /Q /S cloudshell\cm\customscript\*.pyc
