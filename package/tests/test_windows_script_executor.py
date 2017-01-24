@@ -14,6 +14,7 @@ class TestWindowsScriptExecutor(TestCase):
         self.logger = Mock()
         self.session = Mock()
         self.session_ctor = Mock()
+        self.cancel_sampler = Mock()
         self.host = HostConfiguration()
         self.host.username = 'admin'
         self.host.password = '1234'
@@ -27,26 +28,26 @@ class TestWindowsScriptExecutor(TestCase):
         self.session_patcher.stop()
 
     def test_http(self):
-        WindowsScriptExecutor(self.logger, self.host)
+        WindowsScriptExecutor(self.logger, self.host, self.cancel_sampler)
         self.session_ctor.assert_called_with('1.2.3.4', auth=('admin','1234'))
 
     def test_https(self):
         self.host.connection_secured = True
-        WindowsScriptExecutor(self.logger, self.host)
+        WindowsScriptExecutor(self.logger, self.host, self.cancel_sampler)
         self.session_ctor.assert_called_with('1.2.3.4', auth=('admin','1234'), transport='ssl')
 
     def test_execute_success(self):
-        executor = WindowsScriptExecutor(self.logger, self.host)
+        executor = WindowsScriptExecutor(self.logger, self.host, self.cancel_sampler)
         output_writer = Mock()
-        self.session.run_ps = Mock(return_value=Result(0, 'some output', 'some error'))
+        self.session.protocol.get_command_output = Mock(return_value=('some output', 'some error', 0))
         executor.execute(ScriptFile('script1', 'some script code'), {'var1':'123'}, output_writer)
         output_writer.write.assert_any_call('some output')
         output_writer.write.assert_any_call('some error')
 
     def test_execute_fail(self):
-        executor = WindowsScriptExecutor(self.logger, self.host)
+        executor = WindowsScriptExecutor(self.logger, self.host, self.cancel_sampler)
         output_writer = Mock()
-        self.session.run_ps = Mock(return_value=Result(1, 'some output', 'some error'))
+        self.session.protocol.get_command_output = Mock(return_value=('some output', 'some error', 1))
         with self.assertRaises(Exception, ) as e:
             executor.execute(ScriptFile('script1', 'some script code'), {}, output_writer)
         self.assertEqual(ErrorMsg.RUN_SCRIPT % 'some error', e.exception.message)

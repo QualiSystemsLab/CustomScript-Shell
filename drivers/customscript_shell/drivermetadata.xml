@@ -1,7 +1,7 @@
 <Driver Description="" MainClass="driver.CustomScriptShellDriver" Name="Custom Script Shell Driver" Version="1.0.0">
     <Layout>
         <Category Name="General">
-            <Command Description="" DisplayName="Execute Script" Name="execute_script" Tags="allow_unreserved" />
+            <Command Description="" DisplayName="Execute Script" EnableCancellation="true" Name="execute_script" Tags="allow_unreserved" />
         </Category>
     </Layout>
 </Driver>

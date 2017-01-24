@@ -14,6 +14,8 @@ class TestCustomScriptShell(TestCase):
     def setUp(self):
         self.context = Mock()
         self.executor = Mock()
+        self.cancel_context = Mock()
+        self.cancel_sampler = Mock()
         self.script_conf = ScriptConfiguration()
         self.logger_patcher = patch('cloudshell.cm.customscript.customscript_shell.LoggingSessionContext')
         self.logger_patcher.start()
@@ -28,6 +30,8 @@ class TestCustomScriptShell(TestCase):
         self.selector_patcher = patch('cloudshell.cm.customscript.customscript_shell.ScriptExecutorSelector.get')
         self.selector_get = self.selector_patcher.start()
         self.selector_get.return_value = self.executor
+        self.cancel_sampler_patcher = patch('cloudshell.cm.customscript.customscript_shell.CancellationSampler')
+        self.cancel_sampler_patcher.start().return_value = self.cancel_sampler
 
     def tearDown(self):
         self.logger_patcher.stop()
@@ -36,11 +40,12 @@ class TestCustomScriptShell(TestCase):
         self.parser_patcher.stop()
         self.downloader_patcher.stop()
         self.selector_patcher.stop()
+        self.cancel_sampler_patcher.stop()
 
     def test_download_script_without_auth(self):
         self.script_conf.script_repo.url = 'some url'
 
-        CustomScriptShell().execute_script(self.context, '')
+        CustomScriptShell().execute_script(self.context, '', self.cancel_context)
 
         self.downloader.assert_called_with('some url', None)
 
@@ -49,19 +54,19 @@ class TestCustomScriptShell(TestCase):
         self.script_conf.script_repo.username = 'admin'
         self.script_conf.script_repo.password = '1234'
 
-        CustomScriptShell().execute_script(self.context, '')
+        CustomScriptShell().execute_script(self.context, '', self.cancel_context)
 
         self.downloader.assert_called_with('some url', Any(lambda x: x.username == 'admin' and x.password=='1234'))
 
     def test_selector_is_called_with_host_details(self):
-        CustomScriptShell().execute_script(self.context, '')
+        CustomScriptShell().execute_script(self.context, '', self.cancel_context)
 
-        self.selector_get.assert_called_with(self.script_conf.host_conf, Any())
+        self.selector_get.assert_called_with(self.script_conf.host_conf, Any(), self.cancel_sampler)
 
     def test_execute_is_called(self):
-        CustomScriptShell().execute_script(self.context, '')
+        CustomScriptShell().execute_script(self.context, '', self.cancel_context)
 
-        self.selector_get.assert_called_with(self.script_conf.host_conf, Any())
+        self.selector_get.assert_called_with(self.script_conf.host_conf, Any(), self.cancel_sampler)
 
         self.executor.execute.assert_called_once()
 

@@ -4,6 +4,7 @@ from logging import Logger
 import re
 import requests
 
+from cloudshell.cm.customscript.domain.cancellation_sampler import CancellationSampler
 from cloudshell.cm.customscript.domain.script_file import ScriptFile
 
 
@@ -16,11 +17,13 @@ class HttpAuth(object):
 class ScriptDownloader(object):
     CHUNK_SIZE = 1024 * 1024
 
-    def __init__(self, logger):
+    def __init__(self, logger, cancel_sampler):
         """
         :type logger: Logger
+        :type cancel_sampler: CancellationSampler
         """
         self.logger = logger
+        self.cancel_sampler = cancel_sampler
         self.filename_pattern = "(?P<filename>\s*[\w,\s-]+\.(sh|bash|ps1)\s*)"
         self.filename_patterns = {
             "content-disposition": "\s*((?i)inline|attachment|extension-token)\s*;\s*filename=" + self.filename_pattern,
@@ -40,6 +43,7 @@ class ScriptDownloader(object):
         for chunk in response.iter_content(ScriptDownloader.CHUNK_SIZE):
             if chunk:
                 file_txt += ''.join(chunk)
+            self.cancel_sampler.throw_if_canceled()
 
         return ScriptFile(name=file_name, text=file_txt)
 

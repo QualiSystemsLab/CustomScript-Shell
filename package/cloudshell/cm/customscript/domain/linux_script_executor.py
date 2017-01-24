@@ -1,8 +1,13 @@
 import sys
 from StringIO import StringIO
+from multiprocessing.pool import ThreadPool
+from threading import Thread
+
+import time
 from paramiko import SSHClient, AutoAddPolicy, RSAKey
 from scpclient import Write, SCPError
 
+from cloudshell.cm.customscript.domain.cancellation_sampler import CancellationSampler
 from cloudshell.cm.customscript.domain.reservation_output_writer import ReservationOutputWriter
 from cloudshell.cm.customscript.domain.script_configuration import HostConfiguration
 from cloudshell.cm.customscript.domain.script_executor import IScriptExecutor, ErrorMsg
@@ -16,12 +21,15 @@ class LinuxScriptExecutor(IScriptExecutor):
             self.std_out = std_out
             self.success = exit_code == 0
 
-    def __init__(self, logger, target_host):
+    def __init__(self, logger, target_host, cancel_sampler):
         """
         :type logger: Logger
         :type target_host: HostConfiguration
+        :type cancel_sampler: CancellationSampler
         """
         self.logger = logger
+        self.cancel_sampler = cancel_sampler
+        self.pool = ThreadPool(processes=1)
         self.session = SSHClient()
         self.session.set_missing_host_key_policy(AutoAddPolicy())
         if target_host.access_key:
@@ -41,8 +49,7 @@ class LinuxScriptExecutor(IScriptExecutor):
         self.logger.info('Done (%s).' % tmp_folder)
 
         try:
-            self.logger.info('Copying "%s" (% chars) to "%s" target machine ...' % (
-            script_file.name, len(script_file.text), tmp_folder))
+            self.logger.info('Copying "%s" (%s chars) to "%s" target machine ...' % (script_file.name, len(script_file.text), tmp_folder))
             self.copy_script(tmp_folder, script_file)
             self.logger.info('Done.')
 
@@ -59,7 +66,7 @@ class LinuxScriptExecutor(IScriptExecutor):
         """
         :rtype str
         """
-        result = self._run('mktemp -d')
+        result = self._run_cancelable('mktemp -d')
         if not result.success:
             raise Exception(ErrorMsg.CREATE_TEMP_FOLDER % result.std_err)
         return result.std_out.rstrip('\n')
@@ -92,7 +99,7 @@ class LinuxScriptExecutor(IScriptExecutor):
         for key, value in (env_vars or {}).iteritems():
             code += 'export %s=%s;' % (key,self._escape(value))
         code += 'sh '+tmp_folder+'/'+script_file.name
-        result = self._run(code)
+        result = self._run_cancelable(code)
         output_writer.write(result.std_out)
         output_writer.write(result.std_err)
         if not result.success:
@@ -102,22 +109,37 @@ class LinuxScriptExecutor(IScriptExecutor):
         """
         :type tmp_folder: str
         """
-        result = self._run('rm -rf '+tmp_folder)
+        result = self._run_cancelable('rm -rf '+tmp_folder)
         if not result.success:
             raise Exception(ErrorMsg.DELETE_TEMP_FOLDER % result.std_err)
 
-    def _run(self, txt, *args):
-        code = txt % args
+    def _run(self, code):
         self.logger.debug('BashScript:' + code)
+
+        #stdin, stdout, stderr = self._run_cancelable(code)
         stdin, stdout, stderr = self.session.exec_command(code)
+
         exit_code = stdout.channel.recv_exit_status()
         stdout_txt = ''.join(stdout.readlines())
         stderr_txt = ''.join(stderr.readlines())
+
         self.logger.debug('ReturnedCode:' + str(exit_code))
         self.logger.debug('Stdout:' + stdout_txt)
         self.logger.debug('Stderr:' + stderr_txt)
+
         return LinuxScriptExecutor.ExecutionResult(exit_code, stdout_txt, stderr_txt)
 
+    def _run_cancelable(self, txt, *args):
+        async_result = self.pool.apply_async(self._run, kwds={'code': txt % args})
+
+        while not async_result.ready():
+            if self.cancel_sampler.is_cancelled():
+                self.session.close()
+                self.cancel_sampler.throw()
+            time.sleep(1)
+
+        return async_result.get()
+
     def _escape(self, value):
-        escaped_str = "$'" + '\\x' + '\\x'.join([x.encode("hex") for x in str(value).encode("ascii")]) + "'"
+        escaped_str = "$'" + '\\x' + '\\x'.join([x.encode("hex") for x in str(value).encode("utf-8")]) + "'"
         return escaped_str

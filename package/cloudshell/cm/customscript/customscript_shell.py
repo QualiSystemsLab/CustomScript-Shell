@@ -6,6 +6,7 @@ from cloudshell.shell.core.context import ResourceCommandContext
 from cloudshell.shell.core.session.cloudshell_session import CloudShellSessionContext
 from cloudshell.shell.core.session.logging_session import LoggingSessionContext
 
+from cloudshell.cm.customscript.domain.cancellation_sampler import CancellationSampler
 from cloudshell.cm.customscript.domain.reservation_output_writer import ReservationOutputWriter
 from cloudshell.cm.customscript.domain.script_configuration import ScriptConfigurationParser, ScriptRepository, \
     HostConfiguration
@@ -20,37 +21,40 @@ class CustomScriptShell(object):
     def __init__(self):
         pass
 
-    def execute_script(self, command_context, script_conf_json):
+    def execute_script(self, command_context, script_conf_json, cancellation_context):
         """
         :type command_context: ResourceCommandContext
         :type ansi_conf_json: str
+        :type cancellation_context: CancellationContext
         :rtype str
         """
         with LoggingSessionContext(command_context) as logger:
+            cancel_sampler = CancellationSampler(cancellation_context)
             with ErrorHandlingContext(logger):
                 logger.debug('\'execute_script\' is called with the configuration json: \n' + script_conf_json)
                 script_conf = ScriptConfigurationParser.json_to_object(script_conf_json)
 
                 logger.info('Downloading file from \'%s\' ...' % script_conf.script_repo.url)
-                script_file = self._download_script(script_conf.script_repo, logger)
+                script_file = self._download_script(script_conf.script_repo, logger, cancel_sampler)
                 logger.info('Done (%s, %s chars).' % (script_file.name, len(script_file.text)))
 
-                service = ScriptExecutorSelector.get(script_conf.host_conf, logger)
+                service = ScriptExecutorSelector.get(script_conf.host_conf, logger, cancel_sampler)
                 with CloudShellSessionContext(command_context) as session:
                     output_writer = ReservationOutputWriter(session, command_context)
                     service.execute(script_file, script_conf.host_conf.parameters, output_writer)
 
-    def _download_script(self, script_repo, logger):
+    def _download_script(self, script_repo, logger, cancel_sampler):
         """
         :type script_repo: ScriptRepository
         :type logger: Logger
+        :type cancel_sampler: CancellationSampler
         :rtype ScriptFile
         """
         url = script_repo.url
         auth = None
         if script_repo.username:
             auth = HttpAuth(script_repo.username, script_repo.password)
-        return ScriptDownloader(logger).download(url, auth)
+        return ScriptDownloader(logger, cancel_sampler).download(url, auth)
 
 
 
