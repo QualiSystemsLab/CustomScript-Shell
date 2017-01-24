@@ -8,12 +8,14 @@ from cloudshell.cm.customscript.domain.script_executor import IScriptExecutor, E
 
 
 class WindowsScriptExecutor(IScriptExecutor):
-    def __init__(self, logger, target_host):
+    def __init__(self, logger, target_host, cancel_sampler):
         """
         :type logger: Logger
         :type target_host: HostConfiguration
+        :type cancel_sampler: CancellationContext
         """
         self.logger = logger
+        self.cancel_sampler = cancel_sampler
         if target_host.connection_secured:
             self.session = winrm.Session(target_host.ip, auth=(target_host.username, target_host.password), transport='ssl')
         else:

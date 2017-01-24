@@ -13,6 +13,7 @@ class TestLinuxScriptExecutor(TestCase):
 
     def setUp(self):
         self.logger = Mock()
+        self.cancel_sampler = Mock()
         self.session = Mock()
         self.scp = Mock()
         self.scp_ctor = Mock()
@@ -25,7 +26,7 @@ class TestLinuxScriptExecutor(TestCase):
         self.scp_ctor = self.scp_patcher.start()
         self.scp_ctor.return_value = self.scp
 
-        self.executor = LinuxScriptExecutor(self.logger, self.host)
+        self.executor = LinuxScriptExecutor(self.logger, self.host, self.cancel_sampler)
 
     def tearDown(self):
         self.session_patcher.stop()
@@ -42,7 +43,7 @@ class TestLinuxScriptExecutor(TestCase):
     def test_user_password(self):
         self.host.username = 'root'
         self.host.password = '1234'
-        executor = LinuxScriptExecutor(self.logger, self.host)
+        executor = LinuxScriptExecutor(self.logger, self.host, self.cancel_sampler)
         self.session.connect.assert_called_with('1.2.3.4',  username='root', password='1234')
 
     def test_pem_file(self):
@@ -50,7 +51,7 @@ class TestLinuxScriptExecutor(TestCase):
         key_obj = Mock()
         with patch('cloudshell.cm.customscript.domain.linux_script_executor.RSAKey.from_private_key') as from_private_key:
             from_private_key.return_value = key_obj
-            executor = LinuxScriptExecutor(self.logger, self.host)
+            executor = LinuxScriptExecutor(self.logger, self.host, self.cancel_sampler)
         self.session.connect.assert_called_with('1.2.3.4', pkey=key_obj)
 
     def test_create_temp_folder_success(self):
