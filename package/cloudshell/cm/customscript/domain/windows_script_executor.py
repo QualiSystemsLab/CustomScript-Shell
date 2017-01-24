@@ -65,8 +65,6 @@ class WindowsScriptExecutor(IScriptExecutor):
                     self.cancel_sampler.throw()
                 time.sleep(1)
             result = winrm.Response(async_result.get())
-            if len(result.std_err):
-                result.std_err = self.session._clean_error_msg(result.std_err)
         finally:
             self.session.protocol.cleanup_command(shell_id, command_id)
             self.session.protocol.close_shell(shell_id)
