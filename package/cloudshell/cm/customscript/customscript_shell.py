@@ -44,7 +44,7 @@ class CustomScriptShell(object):
                 service = ScriptExecutorSelector.get(script_conf.host_conf, logger, cancel_sampler)
 
                 logger.info('Connectiong ...')
-                self._connect(service, cancel_sampler, 1)
+                self._connect(service, cancel_sampler, script_conf.timeout_minutes)
                 logger.info('Done.')
 
                 with CloudShellSessionContext(command_context) as session:

@@ -1,12 +1,15 @@
 import json
+import numbers
 
 
 class ScriptConfiguration(object):
-    def __init__(self, script_repo = None, host_conf = None):
+    def __init__(self, script_repo = None, host_conf = None, timeout_minutes = None):
         """
         :type script_repo: ScriptRepository
         :type host_conf: HostConfiguration
+        :type timeout_minutes: float
         """
+        self.timeout_minutes = timeout_minutes or 0.0
         self.script_repo = script_repo or ScriptRepository()
         self.host_conf = host_conf or HostConfiguration()
 
@@ -41,6 +44,7 @@ class ScriptConfigurationParser(object):
         ScriptConfigurationParser._validate(json_obj)
 
         script_conf = ScriptConfiguration()
+        script_conf.timeout_minutes = json_obj.get('timeoutMinutes', 0.0)
 
         repo = json_obj['repositoryDetails']
         script_conf.script_repo.url = repo.get('url')
@@ -67,6 +71,14 @@ class ScriptConfigurationParser(object):
         :rtype bool
         """
         basic_msg = 'Failed to parse script configuration input json: '
+
+        if json_obj.get('timeoutMinutes'):
+
+            if not isinstance(json_obj.get('timeoutMinutes'), numbers.Number):
+                raise SyntaxError(basic_msg + 'Node "timeoutMinutes" must be numeric type.')
+
+            if json_obj.get('timeoutMinutes') < 0:
+                raise SyntaxError(basic_msg + 'Node "timeoutMinutes" must be greater/equal to zero.')
 
         if json_obj.get('repositoryDetails') is None:
             raise SyntaxError(basic_msg + 'Missing "repositoryDetails" node.')

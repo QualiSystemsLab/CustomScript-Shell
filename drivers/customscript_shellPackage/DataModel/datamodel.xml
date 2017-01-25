@@ -3,6 +3,8 @@
   <Attributes>
 	<AttributeInfo Name="Execution Server Selector" Type="String" DefaultValue="" Description="This attribute points to a pre-define group of execution servers. Usually used for different sites or domains." IsReadOnly="false">
 	</AttributeInfo>
+	<AttributeInfo Name="Timeout Minutes" Type="Numeric" DefaultValue="0" Description="Maximum number of minutes to connect to the target machine." IsReadOnly="false">
+    </AttributeInfo>
   </Attributes>
   <ResourceFamilies>
     <ResourceFamily Name="Configuration Services" Description="" IsAdminOnly="true" IsService="true" ServiceType="Regular">
@@ -16,9 +18,12 @@
       </AttributeValues>
       <Models>
         <ResourceModel Name="Custom Script Configuration" Description="" SupportsConcurrentCommands="false">
-          <AttachedAttributes/>
+          <AttachedAttributes>
+            <AttachedAttribute Name="Timeout Minutes" IsLocal="true" IsOverridable="true"/>
+          </AttachedAttributes>
           <AttributeValues>
             <AttributeValue Name="Execution Server Selector" Value="" />
+            <AttributeValue Name="Timeout Minutes" Value="20" />
           </AttributeValues>
           <ParentModels />
           <Drivers>
