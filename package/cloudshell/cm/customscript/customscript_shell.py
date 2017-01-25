@@ -84,7 +84,7 @@ class CustomScriptShell(object):
             except ExcutorConnectionError as e:
                 if not e.errno in valid_errnos:
                     raise e.inner_error
-                if time.time() - start_time > timeout_minutes*60:
+                if time.time() - start_time >= timeout_minutes*60:
                     raise e.inner_error
                 time.sleep(interval_seconds)
 
