@@ -44,7 +44,7 @@ class CustomScriptShell(object):
                 service = ScriptExecutorSelector.get(script_conf.host_conf, logger, cancel_sampler)
 
                 logger.info('Connectiong ...')
-                self._connect(service, 1)
+                self._connect(service, cancel_sampler, 1)
                 logger.info('Done.')
 
                 with CloudShellSessionContext(command_context) as session:
@@ -64,9 +64,10 @@ class CustomScriptShell(object):
             auth = HttpAuth(script_repo.username, script_repo.password)
         return ScriptDownloader(logger, cancel_sampler).download(url, auth)
 
-    def _connect(self, executor, timeout_minutes):
+    def _connect(self, executor, cancel_sampler, timeout_minutes):
         """
         :type executor: IScriptExecutor
+        :type cancel_sampler: CancellationSampler
         """
         # 10060  ETIMEDOUT      Operation timed out
         # 10061  ECONNREFUSED   Connection refused (happense when host found, port not)
@@ -76,6 +77,7 @@ class CustomScriptShell(object):
         interval_seconds = 10
         start_time = time.time()
         while True:
+            cancel_sampler.throw_if_canceled()
             try:
                 executor.connect()
                 break
@@ -85,7 +87,6 @@ class CustomScriptShell(object):
                 if time.time() - start_time > timeout_minutes*60:
                     raise e.inner_error
                 time.sleep(interval_seconds)
-
 
 # conf = '''{
 # 	"repositoryDetails": {
