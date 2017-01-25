@@ -5,6 +5,18 @@ from cloudshell.cm.customscript.domain.script_configuration import ScriptConfigu
 
 class TestScriptConfiguration(TestCase):
 
+    def test_cannot_parse_json_with_not_numeric_timeout(self):
+        json = '{"timeoutMinutes":"str"}'
+        with self.assertRaises(SyntaxError) as context:
+            ScriptConfigurationParser.json_to_object(json)
+        self.assertIn('Node "timeoutMinutes" must be numeric type.', context.exception.message)
+
+    def test_cannot_parse_json_with_negative_numeric_timeout(self):
+        json = '{"timeoutMinutes":-123}'
+        with self.assertRaises(SyntaxError) as context:
+            ScriptConfigurationParser.json_to_object(json)
+        self.assertIn('Node "timeoutMinutes" must be greater/equal to zero.', context.exception.message)
+
     def test_cannot_parse_json_without_repository_details(self):
         json = '{}'
         with self.assertRaises(SyntaxError) as context:
@@ -68,6 +80,7 @@ class TestScriptConfiguration(TestCase):
     def test_sanity(self):
         json = """
 {
+    "timeoutMinutes": 12.3,
     "repositoryDetails" : {
         "url": "B",
         "username": "C",
@@ -83,6 +96,7 @@ class TestScriptConfiguration(TestCase):
     }]
 }"""
         conf = ScriptConfigurationParser.json_to_object(json)
+        self.assertEquals(12.3, conf.timeout_minutes)
         self.assertEquals("B", conf.script_repo.url)
         self.assertEquals("C", conf.script_repo.username)
         self.assertEquals("D", conf.script_repo.password)

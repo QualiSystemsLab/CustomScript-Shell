@@ -1,5 +1,6 @@
 from unittest import TestCase
 
+from cloudshell.cm.customscript.domain.script_executor import ExcutorConnectionError
 from mock import patch, Mock
 
 from cloudshell.cm.customscript.customscript_shell import CustomScriptShell
@@ -32,6 +33,8 @@ class TestCustomScriptShell(TestCase):
         self.selector_get.return_value = self.executor
         self.cancel_sampler_patcher = patch('cloudshell.cm.customscript.customscript_shell.CancellationSampler')
         self.cancel_sampler_patcher.start().return_value = self.cancel_sampler
+        self.sleep_patcher = patch('cloudshell.cm.customscript.customscript_shell.time.sleep')
+        self.sleep = self.sleep_patcher.start()
 
     def tearDown(self):
         self.logger_patcher.stop()
@@ -41,6 +44,7 @@ class TestCustomScriptShell(TestCase):
         self.downloader_patcher.stop()
         self.selector_patcher.stop()
         self.cancel_sampler_patcher.stop()
+        self.sleep_patcher.stop()
 
     def test_download_script_without_auth(self):
         self.script_conf.script_repo.url = 'some url'
@@ -69,6 +73,52 @@ class TestCustomScriptShell(TestCase):
         self.selector_get.assert_called_with(self.script_conf.host_conf, Any(), self.cancel_sampler)
 
         self.executor.execute.assert_called_once()
+
+    def test_connect_is_called(self):
+        CustomScriptShell().execute_script(self.context, '', self.cancel_context)
+
+        self.executor.connect.assert_called_once()
+
+    def test_connect_retries_until_success(self):
+        self.script_conf.timeout_minutes = 1
+        self.executor.connect.side_effect = [
+            ExcutorConnectionError(10060, Exception()),
+            ExcutorConnectionError(10060, Exception()),
+            ExcutorConnectionError(10060, Exception()),
+            None # success
+        ]
+        self.sleep = Mock()
+
+        CustomScriptShell().execute_script(self.context, '', self.cancel_context)
+
+    def test_connect_retries_until_timeout(self):
+        self.script_conf.timeout_minutes = 0
+        inner_error = Exception()
+        self.executor.connect.side_effect = [
+            ExcutorConnectionError(10060, inner_error),
+            ExcutorConnectionError(10060, inner_error),
+            ExcutorConnectionError(10060, inner_error),
+            None  # success
+        ]
+        self.sleep = Mock()
+
+        with self.assertRaises(Exception) as error:
+            CustomScriptShell().execute_script(self.context, '', self.cancel_context)
+        self.assertEqual(inner_error, error.exception)
+
+    def test_connect_retries_until_bad_error_code(self):
+        self.script_conf.timeout_minutes = 1
+        inner_error = Exception()
+        self.executor.connect.side_effect = [
+            ExcutorConnectionError(10060, Exception()),
+            ExcutorConnectionError(12345, inner_error), # 12345 = invalid error number = will not retry
+            None
+        ]
+        self.sleep = Mock()
+
+        with self.assertRaises(Exception) as error:
+            CustomScriptShell().execute_script(self.context, '', self.cancel_context)
+        self.assertEqual(inner_error, error.exception)
 
             # def test_flow(self):
     #     script_file = ScriptFile('name','text')

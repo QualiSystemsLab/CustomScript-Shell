@@ -1,6 +1,9 @@
 import json
 import os
 
+import errno
+
+import time
 from cloudshell.core.context.error_handling_context import ErrorHandlingContext
 from cloudshell.shell.core.context import ResourceCommandContext
 from cloudshell.shell.core.session.cloudshell_session import CloudShellSessionContext
@@ -11,7 +14,7 @@ from cloudshell.cm.customscript.domain.reservation_output_writer import Reservat
 from cloudshell.cm.customscript.domain.script_configuration import ScriptConfigurationParser, ScriptRepository, \
     HostConfiguration
 from cloudshell.cm.customscript.domain.script_downloader import ScriptDownloader, HttpAuth
-from cloudshell.cm.customscript.domain.script_executor import IScriptExecutor
+from cloudshell.cm.customscript.domain.script_executor import IScriptExecutor, ExcutorConnectionError
 from cloudshell.cm.customscript.domain.script_executor_selector import ScriptExecutorSelector
 from cloudshell.cm.customscript.domain.script_file import ScriptFile
 
@@ -39,6 +42,11 @@ class CustomScriptShell(object):
                 logger.info('Done (%s, %s chars).' % (script_file.name, len(script_file.text)))
 
                 service = ScriptExecutorSelector.get(script_conf.host_conf, logger, cancel_sampler)
+
+                logger.info('Connectiong ...')
+                self._connect(service, cancel_sampler, script_conf.timeout_minutes)
+                logger.info('Done.')
+
                 with CloudShellSessionContext(command_context) as session:
                     output_writer = ReservationOutputWriter(session, command_context)
                     service.execute(script_file, script_conf.host_conf.parameters, output_writer)
@@ -56,7 +64,29 @@ class CustomScriptShell(object):
             auth = HttpAuth(script_repo.username, script_repo.password)
         return ScriptDownloader(logger, cancel_sampler).download(url, auth)
 
-
+    def _connect(self, executor, cancel_sampler, timeout_minutes):
+        """
+        :type executor: IScriptExecutor
+        :type cancel_sampler: CancellationSampler
+        """
+        # 10060  ETIMEDOUT      Operation timed out
+        # 10061  ECONNREFUSED   Connection refused (happense when host found, port not)
+        # 10064  EHOSTDOWN      Host is down
+        # 10065  EHOSTUNREACH   Host is unreachable
+        valid_errnos = [10060, 10061, 10064, 10065]
+        interval_seconds = 10
+        start_time = time.time()
+        while True:
+            cancel_sampler.throw_if_canceled()
+            try:
+                executor.connect()
+                break
+            except ExcutorConnectionError as e:
+                if not e.errno in valid_errnos:
+                    raise e.inner_error
+                if time.time() - start_time >= timeout_minutes*60:
+                    raise e.inner_error
+                time.sleep(interval_seconds)
 
 # conf = '''{
 # 	"repositoryDetails": {

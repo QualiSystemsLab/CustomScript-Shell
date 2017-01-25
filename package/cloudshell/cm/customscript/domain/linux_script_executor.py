@@ -1,3 +1,4 @@
+import socket
 import sys
 from StringIO import StringIO
 from multiprocessing.pool import ThreadPool
@@ -5,12 +6,13 @@ from threading import Thread
 
 import time
 from paramiko import SSHClient, AutoAddPolicy, RSAKey
+from paramiko.ssh_exception import NoValidConnectionsError
 from scpclient import Write, SCPError
 
 from cloudshell.cm.customscript.domain.cancellation_sampler import CancellationSampler
 from cloudshell.cm.customscript.domain.reservation_output_writer import ReservationOutputWriter
 from cloudshell.cm.customscript.domain.script_configuration import HostConfiguration
-from cloudshell.cm.customscript.domain.script_executor import IScriptExecutor, ErrorMsg
+from cloudshell.cm.customscript.domain.script_executor import IScriptExecutor, ErrorMsg, ExcutorConnectionError
 from cloudshell.cm.customscript.domain.script_file import ScriptFile
 
 
@@ -32,12 +34,23 @@ class LinuxScriptExecutor(IScriptExecutor):
         self.pool = ThreadPool(processes=1)
         self.session = SSHClient()
         self.session.set_missing_host_key_policy(AutoAddPolicy())
-        if target_host.access_key:
-            key_stream = StringIO(target_host.access_key)
-            key_obj = RSAKey.from_private_key(key_stream)
-            self.session.connect(target_host.ip, pkey=key_obj)
-        else:
-            self.session.connect(target_host.ip, username=target_host.username, password=target_host.password)
+        self.target_host = target_host
+
+    def connect(self):
+        try:
+            if self.target_host.access_key:
+                key_stream = StringIO(self.target_host.access_key)
+                key_obj = RSAKey.from_private_key(key_stream)
+                self.session.connect(self.target_host.ip, pkey=key_obj)
+            else:
+                self.session.connect(self.target_host.ip, username=self.target_host.username, password=self.target_host.password)
+        except NoValidConnectionsError as e:
+            error_code = next(e.errors.itervalues(), type('e', (object,), {'errno': 0})).errno
+            raise ExcutorConnectionError(error_code, e)
+        except socket.error as e:
+            raise ExcutorConnectionError(e.errno, e)
+        except Exception as e:
+            raise ExcutorConnectionError(0, e)
 
     def execute(self, script_file, env_vars, output_writer):
         """
