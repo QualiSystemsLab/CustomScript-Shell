@@ -2,13 +2,16 @@ import base64
 
 import time
 from multiprocessing.pool import ThreadPool
+from uuid import uuid4
 
+import re
 import winrm
 from logging import Logger
 
 from cloudshell.cm.customscript.domain.reservation_output_writer import ReservationOutputWriter
 from cloudshell.cm.customscript.domain.script_configuration import HostConfiguration
-from cloudshell.cm.customscript.domain.script_executor import IScriptExecutor, ErrorMsg
+from cloudshell.cm.customscript.domain.script_executor import IScriptExecutor, ErrorMsg, ExcutorConnectionError
+from requests import ConnectionError
 
 
 class WindowsScriptExecutor(IScriptExecutor):
@@ -25,6 +28,18 @@ class WindowsScriptExecutor(IScriptExecutor):
             self.session = winrm.Session(target_host.ip, auth=(target_host.username, target_host.password), transport='ssl')
         else:
             self.session = winrm.Session(target_host.ip, auth=(target_host.username, target_host.password))
+
+    def connect(self):
+        try:
+            uid = str(uuid4())
+            result = self.session.run_cmd('@echo '+uid)
+            assert uid in result.std_out
+        except ConnectionError as e:
+            match = re.search(r'\[Errno (?P<errno>\d+)\]', str(e.message))
+            error_code = int(match.group('errno')) if match else 0
+            raise ExcutorConnectionError(error_code, e)
+        except Exception as e:
+            raise ExcutorConnectionError(0, e)
 
     def execute(self, script_file, env_vars, output_writer):
         """
