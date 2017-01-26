@@ -38,12 +38,12 @@ class LinuxScriptExecutor(IScriptExecutor):
 
     def connect(self):
         try:
-            if self.target_host.access_key:
+            if self.target_host.password:
+                self.session.connect(self.target_host.ip, username=self.target_host.username, password=self.target_host.password)
+            else:
                 key_stream = StringIO(self.target_host.access_key)
                 key_obj = RSAKey.from_private_key(key_stream)
-                self.session.connect(self.target_host.ip, pkey=key_obj)
-            else:
-                self.session.connect(self.target_host.ip, username=self.target_host.username, password=self.target_host.password)
+                self.session.connect(self.target_host.ip, username=self.target_host.username, pkey=key_obj)
         except NoValidConnectionsError as e:
             error_code = next(e.errors.itervalues(), type('e', (object,), {'errno': 0})).errno
             raise ExcutorConnectionError(error_code, e)

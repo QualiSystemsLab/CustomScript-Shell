@@ -48,13 +48,14 @@ class TestLinuxScriptExecutor(TestCase):
         self.session.connect.assert_called_with('1.2.3.4',  username='root', password='1234')
 
     def test_pem_file(self):
+        self.host.username = 'root'
         self.host.access_key = 'just an access key'
         key_obj = Mock()
         with patch('cloudshell.cm.customscript.domain.linux_script_executor.RSAKey.from_private_key') as from_private_key:
             from_private_key.return_value = key_obj
             executor = LinuxScriptExecutor(self.logger, self.host, self.cancel_sampler)
             executor.connect()
-        self.session.connect.assert_called_with('1.2.3.4', pkey=key_obj)
+        self.session.connect.assert_called_with('1.2.3.4', username='root', pkey=key_obj)
 
     def test_create_temp_folder_success(self):
         self._mock_session_answer(0,'tmp123','')
