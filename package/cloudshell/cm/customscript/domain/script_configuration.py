@@ -33,8 +33,14 @@ class HostConfiguration(object):
 
 
 class ScriptConfigurationParser(object):
-    @staticmethod
-    def json_to_object(json_str):
+
+    def __init__(self, api):
+        """
+        :type api: CloudShellAPISession
+        """
+        self.api = api
+
+    def json_to_object(self, json_str):
         """
         Decodes a json string to an ScriptConfigurationParser instance.
         :type json_str: str
@@ -54,15 +60,29 @@ class ScriptConfigurationParser(object):
         host = json_obj['hostsDetails'][0]
         script_conf.host_conf = HostConfiguration()
         script_conf.host_conf.ip = host.get('ip')
-        script_conf.host_conf.connection_method = host['connectionMethod'].lower() if host.get('connectionMethod') else None
+        script_conf.host_conf.connection_method = host['connectionMethod'].lower()
         script_conf.host_conf.connection_secured = bool_parse(host.get('connectionSecured'))
         script_conf.host_conf.username = host.get('username')
-        script_conf.host_conf.password = host.get('password')
-        script_conf.host_conf.access_key = host.get('accessKey')
+        script_conf.host_conf.password = self._get_password(host)
+        script_conf.host_conf.access_key = self._get_access_key(host)
         if host.get('parameters'):
             script_conf.host_conf.parameters = dict((i['name'], i['value']) for i in host['parameters'])
 
         return script_conf
+
+    def _get_password(self, json_host):
+        pw = json_host.get('password')
+        if pw:
+            return self.api.DecryptPassword(pw).Value
+        else:
+            return pw
+
+    def _get_access_key(self, json_host):
+        key = json_host.get('accessKey')
+        if key:
+            return self.api.DecryptPassword(key).Value
+        else:
+            return key
 
     @staticmethod
     def _validate(json_obj):

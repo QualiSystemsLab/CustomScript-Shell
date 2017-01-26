@@ -32,23 +32,24 @@ class CustomScriptShell(object):
         :rtype str
         """
         with LoggingSessionContext(command_context) as logger:
-            cancel_sampler = CancellationSampler(cancellation_context)
+            logger.debug('\'execute_script\' is called with the configuration json: \n' + script_conf_json)
+
             with ErrorHandlingContext(logger):
-                logger.debug('\'execute_script\' is called with the configuration json: \n' + script_conf_json)
-                script_conf = ScriptConfigurationParser.json_to_object(script_conf_json)
+                with CloudShellSessionContext(command_context) as api:
+                    cancel_sampler = CancellationSampler(cancellation_context)
+                    script_conf = ScriptConfigurationParser(api).json_to_object(script_conf_json)
 
-                logger.info('Downloading file from \'%s\' ...' % script_conf.script_repo.url)
-                script_file = self._download_script(script_conf.script_repo, logger, cancel_sampler)
-                logger.info('Done (%s, %s chars).' % (script_file.name, len(script_file.text)))
+                    logger.info('Downloading file from \'%s\' ...' % script_conf.script_repo.url)
+                    script_file = self._download_script(script_conf.script_repo, logger, cancel_sampler)
+                    logger.info('Done (%s, %s chars).' % (script_file.name, len(script_file.text)))
 
-                service = ScriptExecutorSelector.get(script_conf.host_conf, logger, cancel_sampler)
+                    service = ScriptExecutorSelector.get(script_conf.host_conf, logger, cancel_sampler)
 
-                logger.info('Connectiong ...')
-                self._connect(service, cancel_sampler, script_conf.timeout_minutes)
-                logger.info('Done.')
+                    logger.info('Connectiong ...')
+                    self._connect(service, cancel_sampler, script_conf.timeout_minutes)
+                    logger.info('Done.')
 
-                with CloudShellSessionContext(command_context) as session:
-                    output_writer = ReservationOutputWriter(session, command_context)
+                    output_writer = ReservationOutputWriter(api, command_context)
                     service.execute(script_file, script_conf.host_conf.parameters, output_writer)
 
     def _download_script(self, script_repo, logger, cancel_sampler):
