@@ -15,6 +15,8 @@ from requests import ConnectionError
 
 
 class WindowsScriptExecutor(IScriptExecutor):
+    COPY_BULK_SIZE = 2000
+
     def __init__(self, logger, target_host, cancel_sampler):
         """
         :type logger: Logger
@@ -85,15 +87,21 @@ Write-Output $fullPath
         :type tmp_folder: str
         :type script_file: ScriptFile
         """
-        encoded_script_txt = base64.b64encode(script_file.text.encode("utf-8"))
-        code = """
+        all_size = len(script_file.text)
+        bulk_zise = WindowsScriptExecutor.COPY_BULK_SIZE
+        bulks = [script_file.text[i:min(all_size,i+bulk_zise)] for i in range(0, all_size, bulk_zise)]
+        self.logger.debug("Bulks sizes (%s): %s" % (len(bulks), ', '.join([str(len(b)) for b in bulks])))
+
+        for bulk in bulks:
+            encoded_bulk = base64.b64encode(bulk.encode("utf-8"))
+            code = """
 $path   = Join-Path "%s" "%s"
 $data   = [System.Convert]::FromBase64String("%s")
 Add-Content -value $data -encoding byte -path $path
 """
-        result = self._run_cancelable(code, tmp_folder, script_file.name, encoded_script_txt)
-        if result.status_code != 0:
-            raise Exception(ErrorMsg.COPY_SCRIPT % result.std_err)
+            result = self._run_cancelable(code, tmp_folder, script_file.name, encoded_bulk)
+            if result.status_code != 0:
+                raise Exception(ErrorMsg.COPY_SCRIPT % result.std_err)
 
     def run_script(self, tmp_folder, script_file, env_vars, output_writer):
         """
