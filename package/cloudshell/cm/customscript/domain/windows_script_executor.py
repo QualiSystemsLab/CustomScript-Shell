@@ -41,37 +41,106 @@ class WindowsScriptExecutor(IScriptExecutor):
         except Exception as e:
             raise ExcutorConnectionError(0, e)
 
+
     def execute(self, script_file, env_vars, output_writer):
+        """
+        :type script_file: ScriptFile
+        :type output_writer: ReservationOutputWriter
+        """
+        self.logger.info('Creating temp folder on target machine ...')
+        tmp_folder = self.create_temp_folder()
+        self.logger.info('Done (%s).' % tmp_folder)
+
+        try:
+            self.logger.info('Copying "%s" (%s chars) to "%s" target machine ...' % (
+            script_file.name, len(script_file.text), tmp_folder))
+            self.copy_script(tmp_folder, script_file)
+            self.logger.info('Done.')
+
+            self.logger.info('Running "%s" on target machine ...' % script_file.name)
+            self.run_script(tmp_folder, script_file, env_vars, output_writer)
+            self.logger.info('Done.')
+
+        finally:
+            self.logger.info('Deleting "%s" folder from target machine ...' % tmp_folder)
+            self.delete_temp_folder(tmp_folder)
+            self.logger.info('Done.')
+
+    def create_temp_folder(self):
+        """
+        :rtype str
+        """
+        code = """
+$fullPath = Join-Path $env:Temp ([System.Guid]::NewGuid().ToString())
+New-Item $fullPath -type directory | Out-Null
+Write-Output $fullPath
+"""
+        result = self._run_cancelable(code)
+        if result.status_code != 0:
+            raise Exception(ErrorMsg.CREATE_TEMP_FOLDER % result.std_err)
+        return result.std_out.rstrip('\r\n')
+
+    def copy_script(self, tmp_folder, script_file):
+        """
+        :type tmp_folder: str
+        :type script_file: ScriptFile
+        """
+        encoded_script_txt = base64.b64encode(script_file.text.encode("utf-8"))
+        code = """
+$path   = Join-Path "%s" "%s"
+$data   = [System.Convert]::FromBase64String("%s")
+Add-Content -value $data -encoding byte -path $path
+"""
+        result = self._run_cancelable(code, tmp_folder, script_file.name, encoded_script_txt)
+        if result.status_code != 0:
+            raise Exception(ErrorMsg.COPY_SCRIPT % result.std_err)
+
+    def run_script(self, tmp_folder, script_file, env_vars, output_writer):
         """
         :type tmp_folder: str
         :type script_file: ScriptFile
         :type env_vars: dict
         :type output_writer: ReservationOutputWriter
         """
-        self.logger.debug('PowerShellScript:' + script_file.text)
         code = ''
         for key, value in (env_vars or {}).iteritems():
-            code += 'set %s="%s" &&' % (key, str(value))
-        encoded_script = base64.b64encode(script_file.text.encode('utf_16_le')).decode('ascii')
-        code += '\npowershell -encodedcommand %s' % encoded_script
-
-        result = self._run_cancelable(code)
+            code += '\n$env:%s = "%s"' % (key, str(value))
+        code += """
+$path = Join-Path "%s" "%s"
+Invoke-Expression $path
+"""
+        result = self._run_cancelable(code, tmp_folder, script_file.name)
         output_writer.write(result.std_out)
         output_writer.write(result.std_err)
         if result.status_code != 0:
             raise Exception(ErrorMsg.RUN_SCRIPT % result.std_err)
 
+    def delete_temp_folder(self, tmp_folder):
+        """
+        :type tmp_folder: str
+        """
+        code = """
+$path = "%s"
+Remove-Item $path -recurse
+"""
+        result = self._run_cancelable(code % tmp_folder)
+        if result.status_code != 0:
+            raise Exception(ErrorMsg.DELETE_TEMP_FOLDER % result.std_err)
 
-    def _run_ps(self, code):
-        result = self.session.run_ps(code)
-        self.logger.debug('ReturnedCode:' + str(result.status_code))
-        self.logger.debug('Stdout:' + result.std_out)
-        self.logger.debug('Stderr:' + result.std_err)
-        return result
+    # def _run_ps(self, code):
+    #     result = self.session.run_ps(code)
+    #     self.logger.debug('ReturnedCode:' + str(result.status_code))
+    #     self.logger.debug('Stdout:' + result.std_out)
+    #     self.logger.debug('Stderr:' + result.std_err)
+    #     return result
 
-    def _run_cancelable(self, code):
+    def _run_cancelable(self, txt, *args):
+        ps_code = txt % args
+        self.logger.debug('PowerShellScript:' + ps_code)
+
+        bat_code = 'powershell -encodedcommand %s' % base64.b64encode(ps_code.encode('utf_16_le')).decode('ascii')
         shell_id = self.session.protocol.open_shell()
-        command_id = self.session.protocol.run_command(shell_id, code)
+        command_id = self.session.protocol.run_command(shell_id, bat_code)
 
         async_result = self.pool.apply_async(self.session.protocol.get_command_output, kwds={'shell_id': shell_id, 'command_id': command_id})
         try:
