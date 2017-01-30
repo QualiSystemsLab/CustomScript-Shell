@@ -59,6 +59,12 @@ class TestWindowsScriptExecutor(TestCase):
         self.session.protocol.get_command_output = Mock(return_value=('','',0))
         executor.copy_script('tmp123', ScriptFile('script1','some script code'))
 
+    def test_copy_long_script_in_bulks(self):
+        executor = WindowsScriptExecutor(self.logger, self.host, self.cancel_sampler)
+        self.session.protocol.get_command_output = Mock(return_value=('','',0))
+        executor.copy_script('tmp123', ScriptFile('script1',''.join(['a' for i in range(0,4500)]))) # 3 bulks: 2000,2000,500
+        self.assertEqual(3, self.session.protocol.get_command_output.call_count)
+
     def test_copy_script_fail(self):
         executor = WindowsScriptExecutor(self.logger, self.host, self.cancel_sampler)
         self.session.protocol.get_command_output = Mock(return_value=('','some error',1))
