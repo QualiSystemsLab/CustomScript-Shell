@@ -74,7 +74,8 @@ class CustomScriptShell(object):
         # 10061  ECONNREFUSED   Connection refused (happense when host found, port not)
         # 10064  EHOSTDOWN      Host is down
         # 10065  EHOSTUNREACH   Host is unreachable
-        valid_errnos = [10060, 10061, 10064, 10065]
+        # 500                   Bad http response (winrm)
+        valid_errnos = [10060, 10061, 10064, 10065, 500]
         interval_seconds = 10
         start_time = time.time()
         while True:

@@ -8,6 +8,8 @@ import re
 import winrm
 from logging import Logger
 
+from winrm.exceptions import WinRMTransportError
+
 from cloudshell.cm.customscript.domain.reservation_output_writer import ReservationOutputWriter
 from cloudshell.cm.customscript.domain.script_configuration import HostConfiguration
 from cloudshell.cm.customscript.domain.script_executor import IScriptExecutor, ErrorMsg, ExcutorConnectionError
@@ -38,6 +40,10 @@ class WindowsScriptExecutor(IScriptExecutor):
             assert uid in result.std_out
         except ConnectionError as e:
             match = re.search(r'\[Errno (?P<errno>\d+)\]', str(e.message))
+            error_code = int(match.group('errno')) if match else 0
+            raise ExcutorConnectionError(error_code, e)
+        except WinRMTransportError as e:
+            match = re.search(r'Code (?P<errno>\d+)', str(e.message))
             error_code = int(match.group('errno')) if match else 0
             raise ExcutorConnectionError(error_code, e)
         except Exception as e:

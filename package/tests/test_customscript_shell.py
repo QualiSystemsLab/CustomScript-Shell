@@ -84,7 +84,7 @@ class TestCustomScriptShell(TestCase):
         self.executor.connect.side_effect = [
             ExcutorConnectionError(10060, Exception()),
             ExcutorConnectionError(10060, Exception()),
-            ExcutorConnectionError(10060, Exception()),
+            ExcutorConnectionError(500, Exception()),
             None # success
         ]
         self.sleep = Mock()
