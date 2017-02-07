@@ -1,3 +1,4 @@
+import re
 
 
 class ReservationOutputWriter(object):
@@ -11,4 +12,9 @@ class ReservationOutputWriter(object):
 
     def write(self, msg):
         if msg:
+            msg = self._remove_illegal_chars(msg)
             self.session.WriteMessageToReservationOutput(self.resevation_id, msg)
+
+    def _remove_illegal_chars(self, str):
+        rx = re.compile(u'\x00')
+        return rx.sub('', str)
