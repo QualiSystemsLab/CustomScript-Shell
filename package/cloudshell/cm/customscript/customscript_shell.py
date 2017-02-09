@@ -70,12 +70,14 @@ class CustomScriptShell(object):
         :type executor: IScriptExecutor
         :type cancel_sampler: CancellationSampler
         """
-        # 10060  ETIMEDOUT      Operation timed out
-        # 10061  ECONNREFUSED   Connection refused (happense when host found, port not)
-        # 10064  EHOSTDOWN      Host is down
-        # 10065  EHOSTUNREACH   Host is unreachable
-        # 500                   Bad http response (winrm)
-        valid_errnos = [10060, 10061, 10064, 10065, 500]
+        # 10060  ETIMEDOUT                      Operation timed out
+        # 10061  ECONNREFUSED                   Connection refused (happense when host found, port not)
+        # 10064  EHOSTDOWN                      Host is down
+        # 10065  EHOSTUNREACH                   Host is unreachable
+        # 500                                   Bad http response (winrm)
+        # 110    ERROR_SSH_CONNECTION_LOST      Connection was lost by some reason
+        # 111    ERROR_SSH_APPLICATION_CLOSED   User on the other side of connection closed application that led to disconnection
+        valid_errnos = [10060, 10061, 10064, 10065, 500, 111, 110]
         interval_seconds = 10
         start_time = time.time()
         while True:
