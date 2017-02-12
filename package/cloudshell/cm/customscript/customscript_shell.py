@@ -75,9 +75,10 @@ class CustomScriptShell(object):
         # 10064  EHOSTDOWN                      Host is down
         # 10065  EHOSTUNREACH                   Host is unreachable
         # 500                                   Bad http response (winrm)
-        # 110    ERROR_SSH_CONNECTION_LOST      Connection was lost by some reason
+        # 113    EHOSTUNREACH                   No route to host (winrm - OpenStack)
         # 111    ERROR_SSH_APPLICATION_CLOSED   User on the other side of connection closed application that led to disconnection
-        valid_errnos = [10060, 10061, 10064, 10065, 500, 111, 110]
+        # 110    ERROR_SSH_CONNECTION_LOST      Connection was lost by some reason
+        valid_errnos = [10060, 10061, 10064, 10065, 500, 113, 111, 110]
         interval_seconds = 10
         start_time = time.time()
         while True:
