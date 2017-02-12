@@ -121,7 +121,7 @@ Add-Content -value $data -encoding byte -path $path
             code += '\n$env:%s = "%s"' % (key, str(value))
         code += """
 $path = Join-Path "%s" "%s"
-Invoke-Expression $path
+Invoke-Expression "& '$path'"
 """
         result = self._run_cancelable(code, tmp_folder, script_file.name)
         output_writer.write(result.std_out)
