@@ -57,6 +57,13 @@ class TestLinuxScriptExecutor(TestCase):
             executor.connect()
         self.session.connect.assert_called_with('1.2.3.4', username='root', pkey=key_obj)
 
+    def test_no_password_nor_pen_file(self):
+        self.host.username = 'root'
+        executor = LinuxScriptExecutor(self.logger, self.host, self.cancel_sampler)
+        with self.assertRaises(Exception) as e:
+            executor.connect()
+        self.assertEqual('Both password and access key are empty.', e.exception.inner_error.message)
+
     def test_create_temp_folder_success(self):
         self._mock_session_answer(0,'tmp123','')
         result = self.executor.create_temp_folder()
