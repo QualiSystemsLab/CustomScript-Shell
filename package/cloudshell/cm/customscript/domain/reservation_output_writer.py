@@ -15,6 +15,9 @@ class ReservationOutputWriter(object):
             msg = self._remove_illegal_chars(msg)
             self.session.WriteMessageToReservationOutput(self.resevation_id, msg)
 
+    def write_warning(self, msg):
+        self.session.WriteMessageToReservationOutput(self.resevation_id, '<font color="#f48342">WARNING: %s</font>'%msg)
+
     def _remove_illegal_chars(self, str):
         rx = re.compile(u'\x00')
         return rx.sub('', str)

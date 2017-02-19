@@ -15,8 +15,10 @@ class TestCustomScriptShell(TestCase):
     def setUp(self):
         self.context = Mock()
         self.executor = Mock()
+        self.executor.get_expected_file_extensions = Mock(return_value=[])
         self.cancel_context = Mock()
         self.cancel_sampler = Mock()
+        self.output_writer = Mock()
         self.script_conf = ScriptConfiguration()
         self.logger_patcher = patch('cloudshell.cm.customscript.customscript_shell.LoggingSessionContext')
         self.logger_patcher.start()
@@ -35,6 +37,8 @@ class TestCustomScriptShell(TestCase):
         self.cancel_sampler_patcher.start().return_value = self.cancel_sampler
         self.sleep_patcher = patch('cloudshell.cm.customscript.customscript_shell.time.sleep')
         self.sleep = self.sleep_patcher.start()
+        self.output_writer_patcher = patch('cloudshell.cm.customscript.customscript_shell.ReservationOutputWriter')
+        self.output_writer_patcher.start().return_value = self.output_writer
 
     def tearDown(self):
         self.logger_patcher.stop()
@@ -45,6 +49,7 @@ class TestCustomScriptShell(TestCase):
         self.selector_patcher.stop()
         self.cancel_sampler_patcher.stop()
         self.sleep_patcher.stop()
+        self.output_writer_patcher.stop()
 
     def test_download_script_without_auth(self):
         self.script_conf.script_repo.url = 'some url'
@@ -73,6 +78,24 @@ class TestCustomScriptShell(TestCase):
         self.selector_get.assert_called_with(self.script_conf.host_conf, Any(), self.cancel_sampler)
 
         self.executor.execute.assert_called_once()
+
+    def test_get_expected_file_extensions_pass(self):
+        self.executor.get_expected_file_extensions = Mock(return_value=['A','B'])
+        self.downloader.return_value = ScriptFile('file.A','')
+
+        CustomScriptShell().execute_script(self.context, '', self.cancel_context)
+
+        self.executor.get_expected_file_extensions.assert_called_once()
+
+    def test_get_expected_file_extensions_fails(self):
+        self.script_conf.host_conf.ip = '1.2.3.4'
+        self.script_conf.host_conf.connection_method = 'ABCD'
+        self.executor.get_expected_file_extensions = Mock(return_value=['B', 'C'])
+        self.downloader.return_value = ScriptFile('file.A', '')
+
+        CustomScriptShell().execute_script(self.context, '', self.cancel_context)
+
+        self.output_writer.write_warning.assert_called_once_with('Trying to run ".A" file via ABCD on host 1.2.3.4')
 
     def test_connect_is_called(self):
         CustomScriptShell().execute_script(self.context, '', self.cancel_context)
