@@ -12,6 +12,13 @@ class IScriptExecutor(object):
         pass
 
     @abstractmethod
+    def get_expected_file_extensions(self):
+        """
+        :rtype list[str]
+        """
+        pass
+
+    @abstractmethod
     def execute(self, script_file, env_vars, output_writer):
         """
         :type script_file: ScriptFile

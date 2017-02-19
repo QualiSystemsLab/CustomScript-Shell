@@ -1,3 +1,4 @@
+import os
 import socket
 import sys
 from StringIO import StringIO
@@ -53,6 +54,15 @@ class LinuxScriptExecutor(IScriptExecutor):
             raise ExcutorConnectionError(e.errno, e)
         except Exception as e:
             raise ExcutorConnectionError(0, e)
+
+    def get_expected_file_extensions(self):
+        """
+        :rtype list[str]
+        """
+        return ['.sh','.bash']
+        # file_name, file_ext = os.path.splitext(script_file.name)
+        # if file_ext and file_ext != '.sh' and file_ext != '.bash':
+        #     output_writer.write_warning('Trying to run "%s" file via ssh on host %s' % (file_ext, self.target_host.ip))
 
     def execute(self, script_file, env_vars, output_writer):
         """

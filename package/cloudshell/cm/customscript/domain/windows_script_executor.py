@@ -1,4 +1,5 @@
 import base64
+import os
 
 import time
 from multiprocessing.pool import ThreadPool
@@ -49,6 +50,14 @@ class WindowsScriptExecutor(IScriptExecutor):
         except Exception as e:
             raise ExcutorConnectionError(0, e)
 
+    def get_expected_file_extensions(self):
+        """
+        :rtype list[str]
+        """
+        return ['.ps1']
+        # file_name, file_ext = os.path.splitext(script_file.name)
+        # return file_ext != '.ps1':
+        #     output_writer.write_warning('Trying to run "%s" file via ssh on host %s' % (file_ext, self.target_host.ip))
 
     def execute(self, script_file, env_vars, output_writer):
         """

@@ -38,6 +38,7 @@ class CustomScriptShell(object):
                 with CloudShellSessionContext(command_context) as api:
                     cancel_sampler = CancellationSampler(cancellation_context)
                     script_conf = ScriptConfigurationParser(api).json_to_object(script_conf_json)
+                    output_writer = ReservationOutputWriter(api, command_context)
 
                     logger.info('Downloading file from \'%s\' ...' % script_conf.script_repo.url)
                     script_file = self._download_script(script_conf.script_repo, logger, cancel_sampler)
@@ -45,11 +46,12 @@ class CustomScriptShell(object):
 
                     service = ScriptExecutorSelector.get(script_conf.host_conf, logger, cancel_sampler)
 
+                    self._warn_for_unexpected_file_type(script_conf.host_conf, service, script_file, output_writer)
+
                     logger.info('Connectiong ...')
                     self._connect(service, cancel_sampler, script_conf.timeout_minutes)
                     logger.info('Done.')
 
-                    output_writer = ReservationOutputWriter(api, command_context)
                     service.execute(script_file, script_conf.host_conf.parameters, output_writer)
 
     def _download_script(self, script_repo, logger, cancel_sampler):
@@ -64,6 +66,17 @@ class CustomScriptShell(object):
         if script_repo.username:
             auth = HttpAuth(script_repo.username, script_repo.password)
         return ScriptDownloader(logger, cancel_sampler).download(url, auth)
+
+    def _warn_for_unexpected_file_type(self, target_host, service, script_file, output_writer):
+        """
+        :type target_host: HostConfiguration
+        :type service: IScriptExecutor
+        :type script_file: ScriptFile
+        :type output_writer: ReservationOutputWriter
+        """
+        file_name, file_ext = os.path.splitext(script_file.name)
+        if not file_ext in service.get_expected_file_extensions():
+            output_writer.write_warning('Trying to run "%s" file via %s on host %s' % (file_ext, target_host.connection_method, target_host.ip))
 
     def _connect(self, executor, cancel_sampler, timeout_minutes):
         """
