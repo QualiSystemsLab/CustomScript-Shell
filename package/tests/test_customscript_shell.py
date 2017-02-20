@@ -19,13 +19,14 @@ class TestCustomScriptShell(TestCase):
         self.cancel_context = Mock()
         self.cancel_sampler = Mock()
         self.output_writer = Mock()
+        self.api_session = Mock()
         self.script_conf = ScriptConfiguration()
         self.logger_patcher = patch('cloudshell.cm.customscript.customscript_shell.LoggingSessionContext')
         self.logger_patcher.start()
         self.error_patcher = patch('cloudshell.cm.customscript.customscript_shell.ErrorHandlingContext')
         self.error_patcher.start()
         self.api_patcher = patch('cloudshell.cm.customscript.customscript_shell.CloudShellSessionContext')
-        self.api_patcher.start()
+        self.api_patcher.start().return_value.__enter__ = Mock(return_value=self.api_session)
         self.parser_patcher = patch('cloudshell.cm.customscript.customscript_shell.ScriptConfigurationParser.json_to_object')
         self.parser_patcher.start().return_value = self.script_conf
         self.downloader_patcher = patch('cloudshell.cm.customscript.customscript_shell.ScriptDownloader.download')
@@ -37,8 +38,6 @@ class TestCustomScriptShell(TestCase):
         self.cancel_sampler_patcher.start().return_value = self.cancel_sampler
         self.sleep_patcher = patch('cloudshell.cm.customscript.customscript_shell.time.sleep')
         self.sleep = self.sleep_patcher.start()
-        self.output_writer_patcher = patch('cloudshell.cm.customscript.customscript_shell.ReservationOutputWriter')
-        self.output_writer_patcher.start().return_value = self.output_writer
 
     def tearDown(self):
         self.logger_patcher.stop()
@@ -49,7 +48,6 @@ class TestCustomScriptShell(TestCase):
         self.selector_patcher.stop()
         self.cancel_sampler_patcher.stop()
         self.sleep_patcher.stop()
-        self.output_writer_patcher.stop()
 
     def test_download_script_without_auth(self):
         self.script_conf.script_repo.url = 'some url'
@@ -95,7 +93,7 @@ class TestCustomScriptShell(TestCase):
 
         CustomScriptShell().execute_script(self.context, '', self.cancel_context)
 
-        self.output_writer.write_warning.assert_called_once_with('Trying to run ".A" file via ABCD on host 1.2.3.4')
+        self.api_session.WriteMessageToReservationOutput.assert_called_with(Any(), Any(lambda x: 'Trying to run ".A" file via ABCD on host 1.2.3.4' in x))
 
     def test_connect_is_called(self):
         CustomScriptShell().execute_script(self.context, '', self.cancel_context)
