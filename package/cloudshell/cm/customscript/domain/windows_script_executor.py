@@ -8,7 +8,7 @@ from uuid import uuid4
 import re
 import winrm
 from logging import Logger
-
+import xml.etree.ElementTree as ET
 from winrm.exceptions import WinRMTransportError
 
 from cloudshell.cm.customscript.domain.reservation_output_writer import ReservationOutputWriter
@@ -179,4 +179,18 @@ Remove-Item $path -recurse
         self.logger.debug('ReturnedCode:' + str(result.status_code))
         self.logger.debug('Stdout:' + result.std_out)
         self.logger.debug('Stderr:' + result.std_err)
+        result.std_err = self._try_decode_error_xml(result.std_err)
+        self.logger.debug('Stderr(Decoded):' + result.std_err)
         return result
+
+    def _try_decode_error_xml(self, str):
+        if str:
+            try:
+                str = re.sub(re.escape('#< CLIXML'), '', str, 1)
+                root = ET.fromstring(str)
+                str = ''.join([e.text for e in root.findall('*/[@S="Error"]')])
+                str = re.sub('_x([0-9a-fA-F]{4})_', lambda match: unichr(int(match.group(1), 16)), str)
+                self.logger.error('Sucedded to decode stderr : ' + str)
+            except Exception as e:
+                self.logger.error('Failed to decode stderr. Error: %s' % e.message)
+        return str
