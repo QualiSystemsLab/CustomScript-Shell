@@ -18,6 +18,8 @@ from cloudshell.cm.customscript.domain.script_file import ScriptFile
 
 
 class LinuxScriptExecutor(IScriptExecutor):
+    PasswordEnvVarName = 'cs_machine_pass'
+
     class ExecutionResult(object):
         def __init__(self, exit_code, std_out, std_err):
             self.std_err = std_err
@@ -123,6 +125,8 @@ class LinuxScriptExecutor(IScriptExecutor):
         code = ''
         for key, value in (env_vars or {}).iteritems():
             code += 'export %s=%s;' % (key,self._escape(value))
+        if self.target_host.password:
+            code += 'export %s=%s;' % (self.PasswordEnvVarName, self._escape(self.target_host.password))
         code += 'sh '+tmp_folder+'/'+script_file.name
         result = self._run_cancelable(code)
         output_writer.write(result.std_out)
