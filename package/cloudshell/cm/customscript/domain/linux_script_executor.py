@@ -66,10 +66,11 @@ class LinuxScriptExecutor(IScriptExecutor):
         # if file_ext and file_ext != '.sh' and file_ext != '.bash':
         #     output_writer.write_warning('Trying to run "%s" file via ssh on host %s' % (file_ext, self.target_host.ip))
 
-    def execute(self, script_file, env_vars, output_writer):
+    def execute(self, script_file, env_vars, output_writer, print_output=True):
         """
         :type script_file: ScriptFile
         :type output_writer: ReservationOutputWriter
+        :type print_output: bool
         """
         self.logger.info('Creating temp folder on target machine ...')
         tmp_folder = self.create_temp_folder()
@@ -81,7 +82,7 @@ class LinuxScriptExecutor(IScriptExecutor):
             self.logger.info('Done.')
 
             self.logger.info('Running "%s" on target machine ...' % script_file.name)
-            self.run_script(tmp_folder, script_file, env_vars, output_writer)
+            self.run_script(tmp_folder, script_file, env_vars, output_writer, print_output)
             self.logger.info('Done.')
 
         finally:
@@ -115,12 +116,13 @@ class LinuxScriptExecutor(IScriptExecutor):
             if scp:
                 scp.close()
 
-    def run_script(self, tmp_folder, script_file, env_vars, output_writer):
+    def run_script(self, tmp_folder, script_file, env_vars, output_writer, print_output=True):
         """
         :type tmp_folder: str
         :type script_file: ScriptFile
         :type env_vars: dict
         :type output_writer: ReservationOutputWriter
+        :type print_output: bool
         """
         code = ''
         for key, value in (env_vars or {}).iteritems():
@@ -129,8 +131,9 @@ class LinuxScriptExecutor(IScriptExecutor):
             code += 'export %s=%s;' % (self.PasswordEnvVarName, self._escape(self.target_host.password))
         code += 'sh '+tmp_folder+'/'+script_file.name
         result = self._run_cancelable(code)
-        output_writer.write(result.std_out)
-        output_writer.write(result.std_err)
+        if print_output:
+            output_writer.write(result.std_out)
+            output_writer.write(result.std_err)
         if not result.success:
             raise Exception(ErrorMsg.RUN_SCRIPT % result.std_err)
 
