@@ -3,15 +3,17 @@ import numbers
 
 
 class ScriptConfiguration(object):
-    def __init__(self, script_repo = None, host_conf = None, timeout_minutes = None):
+    def __init__(self, script_repo = None, host_conf = None, timeout_minutes = None, print_output = True):
         """
         :type script_repo: ScriptRepository
         :type host_conf: HostConfiguration
         :type timeout_minutes: float
+        :type print_output: bool
         """
         self.timeout_minutes = timeout_minutes or 0.0
         self.script_repo = script_repo or ScriptRepository()
         self.host_conf = host_conf or HostConfiguration()
+        self.print_output = print_output
 
 
 class ScriptRepository(object):
@@ -51,6 +53,7 @@ class ScriptConfigurationParser(object):
 
         script_conf = ScriptConfiguration()
         script_conf.timeout_minutes = json_obj.get('timeoutMinutes', 0.0)
+        script_conf.print_output = bool_parse(json_obj.get('printOutput'))
 
         repo = json_obj['repositoryDetails']
         script_conf.script_repo.url = repo.get('url')
