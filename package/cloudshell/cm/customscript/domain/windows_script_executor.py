@@ -59,10 +59,11 @@ class WindowsScriptExecutor(IScriptExecutor):
         # return file_ext != '.ps1':
         #     output_writer.write_warning('Trying to run "%s" file via ssh on host %s' % (file_ext, self.target_host.ip))
 
-    def execute(self, script_file, env_vars, output_writer):
+    def execute(self, script_file, env_vars, output_writer, print_output=True):
         """
         :type script_file: ScriptFile
         :type output_writer: ReservationOutputWriter
+        :type print_output: bool
         """
         self.logger.info('Creating temp folder on target machine ...')
         tmp_folder = self.create_temp_folder()
@@ -75,7 +76,7 @@ class WindowsScriptExecutor(IScriptExecutor):
             self.logger.info('Done.')
 
             self.logger.info('Running "%s" on target machine ...' % script_file.name)
-            self.run_script(tmp_folder, script_file, env_vars, output_writer)
+            self.run_script(tmp_folder, script_file, env_vars, output_writer, print_output)
             self.logger.info('Done.')
 
         finally:
@@ -118,12 +119,13 @@ Add-Content -value $data -encoding byte -path $path
             if result.status_code != 0:
                 raise Exception(ErrorMsg.COPY_SCRIPT % result.std_err)
 
-    def run_script(self, tmp_folder, script_file, env_vars, output_writer):
+    def run_script(self, tmp_folder, script_file, env_vars, output_writer, print_output):
         """
         :type tmp_folder: str
         :type script_file: ScriptFile
         :type env_vars: dict
         :type output_writer: ReservationOutputWriter
+        :type print_output: bool
         """
         code = ''
         for key, value in (env_vars or {}).iteritems():
@@ -133,8 +135,9 @@ $path = Join-Path "%s" "%s"
 Invoke-Expression "& '$path'"
 """
         result = self._run_cancelable(code, tmp_folder, script_file.name)
-        output_writer.write(result.std_out)
-        output_writer.write(result.std_err)
+        if print_output:
+            output_writer.write(result.std_out)
+            output_writer.write(result.std_err)
         if result.status_code != 0:
             raise Exception(ErrorMsg.RUN_SCRIPT % result.std_err)
 

@@ -19,7 +19,7 @@ class IScriptExecutor(object):
         pass
 
     @abstractmethod
-    def execute(self, script_file, env_vars, output_writer):
+    def execute(self, script_file, env_vars, output_writer, print_output):
         """
         :type script_file: ScriptFile
         :type output_writer: ReservationOutputWriter
