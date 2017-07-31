@@ -119,7 +119,7 @@ Add-Content -value $data -encoding byte -path $path
             if result.status_code != 0:
                 raise Exception(ErrorMsg.COPY_SCRIPT % result.std_err)
 
-    def run_script(self, tmp_folder, script_file, env_vars, output_writer, print_output):
+    def run_script(self, tmp_folder, script_file, env_vars, output_writer, print_output=True):
         """
         :type tmp_folder: str
         :type script_file: ScriptFile
