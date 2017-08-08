@@ -48,11 +48,11 @@ class CustomScriptShell(object):
 
                     self._warn_for_unexpected_file_type(script_conf.host_conf, service, script_file, output_writer)
 
-                    logger.info('Connectiong ...')
+                    logger.info('Connecting ...')
                     self._connect(service, cancel_sampler, script_conf.timeout_minutes)
                     logger.info('Done.')
 
-                    service.execute(script_file, script_conf.host_conf.parameters, output_writer)
+                    service.execute(script_file, script_conf.host_conf.parameters, output_writer, script_conf.print_output)
 
     def _download_script(self, script_repo, logger, cancel_sampler):
         """
