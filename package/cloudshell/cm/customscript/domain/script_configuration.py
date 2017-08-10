@@ -53,7 +53,7 @@ class ScriptConfigurationParser(object):
 
         script_conf = ScriptConfiguration()
         script_conf.timeout_minutes = json_obj.get('timeoutMinutes', 0.0)
-        script_conf.print_output = bool_parse(json_obj.get('printOutput'))
+        script_conf.print_output = bool_parse(json_obj.get('printOutput', True))
 
         repo = json_obj['repositoryDetails']
         script_conf.script_repo.url = repo.get('url')
