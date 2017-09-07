@@ -14,7 +14,7 @@ from winrm.exceptions import WinRMTransportError
 from cloudshell.cm.customscript.domain.reservation_output_writer import ReservationOutputWriter
 from cloudshell.cm.customscript.domain.script_configuration import HostConfiguration
 from cloudshell.cm.customscript.domain.script_executor import IScriptExecutor, ErrorMsg, ExcutorConnectionError
-from requests import ConnectionError
+from requests import ConnectionError, ConnectTimeout
 
 
 class WindowsScriptExecutor(IScriptExecutor):
@@ -39,6 +39,9 @@ class WindowsScriptExecutor(IScriptExecutor):
             uid = str(uuid4())
             result = self.session.run_cmd('@echo '+uid)
             assert uid in result.std_out
+        except ConnectTimeout as e:
+            self.logger(e.response)
+            raise ExcutorConnectionError(10060, e) #10060=Timeout
         except ConnectionError as e:
             match = re.search(r'\[Errno (?P<errno>\d+)\]', str(e.message))
             error_code = int(match.group('errno')) if match else 0
