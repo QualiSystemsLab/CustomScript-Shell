@@ -114,11 +114,11 @@ Write-Output $fullPath
         for bulk in bulks:
             encoded_bulk = base64.b64encode(bulk.encode("utf-8"))
             code = """
-$path   = Join-Path "%s" "%s"
-$data   = [System.Convert]::FromBase64String("%s")
+$path   = Join-Path "{0}" "{1}"
+$data   = [System.Convert]::FromBase64String("{2}")
 Add-Content -value $data -encoding byte -path $path
-"""
-            result = self._run_cancelable(code, tmp_folder, script_file.name, encoded_bulk)
+""".format(tmp_folder, script_file.name, encoded_bulk)
+            result = self._run_cancelable(code)
             if result.status_code != 0:
                 raise Exception(ErrorMsg.COPY_SCRIPT % result.std_err)
 
@@ -135,10 +135,10 @@ Add-Content -value $data -encoding byte -path $path
             code += '\n$env:%s = "%s"' % (key, str(value).replace('%', '%%'))  # percent signs in environment variables
             # will cause unexpected errors when using string interpolation
         code += """
-$path = Join-Path "%s" "%s"
+$path = Join-Path "{0}" "{1}"
 Invoke-Expression "& '$path'"
-"""
-        result = self._run_cancelable(code, tmp_folder, script_file.name)
+""".format(tmp_folder, script_file.name)
+        result = self._run_cancelable(code)
         if print_output:
             output_writer.write(result.std_out)
             output_writer.write(result.std_err)
@@ -164,8 +164,10 @@ Remove-Item $path -recurse
     #     self.logger.debug('Stderr:' + result.std_err)
     #     return result
 
-    def _run_cancelable(self, txt, *args):
-        ps_code = txt % args
+    def _run_cancelable(self, ps_code):
+        """
+        :type ps_code: str
+        """
         self.logger.debug('PowerShellScript:' + ps_code)
 
         bat_code = 'powershell -encodedcommand %s' % base64.b64encode(ps_code.encode('utf_16_le')).decode('ascii')
