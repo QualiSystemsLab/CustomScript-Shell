@@ -132,7 +132,8 @@ Add-Content -value $data -encoding byte -path $path
         """
         code = ''
         for key, value in (env_vars or {}).iteritems():
-            code += '\n$env:%s = "%s"' % (key, str(value))
+            code += '\n$env:%s = "%s"' % (key, str(value).replace('%', '%%'))  # percent signs in environment variables
+            # will cause unexpected errors when using string interpolation
         code += """
 $path = Join-Path "%s" "%s"
 Invoke-Expression "& '$path'"
