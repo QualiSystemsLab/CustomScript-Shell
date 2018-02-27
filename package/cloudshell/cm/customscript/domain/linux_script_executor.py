@@ -47,8 +47,10 @@ class LinuxScriptExecutor(IScriptExecutor):
                 key_stream = StringIO(self.target_host.access_key)
                 key_obj = RSAKey.from_private_key(key_stream)
                 self.session.connect(self.target_host.ip, username=self.target_host.username, pkey=key_obj)
-            else:
+            elif self.target_host.username:
                 raise Exception('Both password and access key are empty.')
+            else:
+                raise Exception('Machine credentials are empty.')
         except NoValidConnectionsError as e:
             error_code = next(e.errors.itervalues(), type('e', (object,), {'errno': 0})).errno
             raise ExcutorConnectionError(error_code, e)

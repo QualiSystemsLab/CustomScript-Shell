@@ -74,6 +74,12 @@ class TestWindowsScriptExecutor(TestCase):
 
     # Run script
 
+    def test_get_expected_file_extensions(self):
+        executor = WindowsScriptExecutor(self.logger, self.host, self.cancel_sampler)
+        file_extensions = executor.get_expected_file_extensions()
+        self.assertTrue(len(file_extensions)==1)
+        self.assertTrue('.ps1' in file_extensions)
+
     def test_run_script_success(self):
         executor = WindowsScriptExecutor(self.logger, self.host, self.cancel_sampler)
         output_writer = Mock()

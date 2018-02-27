@@ -4,3 +4,6 @@
 
 
 # CustomScript-Shell 
+
+## Links
+* [Offline Package] (https://support.quali.com/hc/en-us/articles/231613247)

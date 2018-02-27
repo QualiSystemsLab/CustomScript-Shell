@@ -45,7 +45,16 @@ class ScriptDownloader(object):
                 file_txt += ''.join(chunk)
             self.cancel_sampler.throw_if_canceled()
 
+        self._validate_response(response, file_txt)
+
         return ScriptFile(name=file_name, text=file_txt)
+
+    def _validate_response(self, response, content):
+        if response.status_code < 200 or response.status_code > 300:
+            raise Exception('Failed to download script file: '+str(response.status_code)+' '+response.reason)
+
+        if content.lstrip('\n\r').lower().startswith('<!doctype html>'):
+            raise Exception('Failed to download script file: url points to an html file')
 
     def _get_filename(self, response):
         file_name = None
