@@ -51,7 +51,8 @@ class ScriptDownloader(object):
 
     def _validate_response(self, response, content):
         if response.status_code < 200 or response.status_code > 300:
-            raise Exception('Failed to download script file: '+str(response.status_code)+' '+response.reason)
+            raise Exception('Failed to download script file: '+str(response.status_code)+' '+response.reason+
+                            '. Please make sure the URL is valid, and the credentials are correct and necessary.')
 
         if content.lstrip('\n\r').lower().startswith('<!doctype html>'):
             raise Exception('Failed to download script file: url points to an html file')
