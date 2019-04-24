@@ -20,7 +20,6 @@ from cloudshell.cm.customscript.domain.script_file import ScriptFile
 
 
 class CustomScriptShell(object):
-
     def __init__(self):
         pass
 
@@ -37,8 +36,11 @@ class CustomScriptShell(object):
             with ErrorHandlingContext(logger):
                 with CloudShellSessionContext(command_context) as api:
                     cancel_sampler = CancellationSampler(cancellation_context)
-                    script_conf = ScriptConfigurationParser(api).json_to_object(script_conf_json)
                     output_writer = ReservationOutputWriter(api, command_context)
+                    script_conf = ScriptConfigurationParser(api).json_to_object(script_conf_json)
+
+                    script_conf.host_conf.ip = self.get_public_ip(api, command_context, script_conf.host_conf.ip)
+                    logger.info('Will use IP: '+script_conf.host_conf.ip)
 
                     logger.info('Downloading file from \'%s\' ...' % script_conf.script_repo.url)
                     script_file = self._download_script(script_conf.script_repo, logger, cancel_sampler)
@@ -52,7 +54,8 @@ class CustomScriptShell(object):
                     self._connect(service, cancel_sampler, script_conf.timeout_minutes)
                     logger.info('Done.')
 
-                    service.execute(script_file, script_conf.host_conf.parameters, output_writer, script_conf.print_output)
+                    service.execute(script_file, script_conf.host_conf.parameters, output_writer,
+                                    script_conf.print_output)
 
     def _download_script(self, script_repo, logger, cancel_sampler):
         """
@@ -76,7 +79,9 @@ class CustomScriptShell(object):
         """
         file_name, file_ext = os.path.splitext(script_file.name)
         if not file_ext in service.get_expected_file_extensions():
-            output_writer.write_warning('Trying to run "%s" file via %s on host %s' % (file_ext, target_host.connection_method, target_host.ip))
+            output_writer.write_warning(
+                    'Trying to run "%s" file via %s on host %s' % (
+                        file_ext, target_host.connection_method, target_host.ip))
 
     def _connect(self, executor, cancel_sampler, timeout_minutes):
         """
@@ -102,27 +107,34 @@ class CustomScriptShell(object):
             except ExcutorConnectionError as e:
                 if not e.errno in valid_errnos:
                     raise e.inner_error
-                if time.time() - start_time >= timeout_minutes*60:
+                if time.time() - start_time >= timeout_minutes * 60:
                     raise e.inner_error
                 time.sleep(interval_seconds)
 
-# conf = '''{
-# 	"repositoryDetails": {
-# 		"url": "http://192.168.30.108:8081/artifactory/LinuxScripts/ls.sh"
-# 	},
-# 	"hostDetails": {
-# 		"ip": "192.168.85.20",
-# 		"username": "root",
-# 		"password": "qs1234",
-# 		"connectionMethod": "ssh"
-# 	}
-# }'''
-# context = ResourceCommandContext()
-# context.resource = ResourceContextDetails()
-# context.resource.name = 'TEST Resource'
-# context.reservation = ReservationContextDetails()
-# context.reservation.reservation_id = '8cc5bc1a-ae62-43c6-8772-3cd2bde5dbd8'
-#
-# shell = CustomScriptShell()
-#
-# shell.execute_script(context, conf)
+                # conf = '''{
+                # 	"repositoryDetails": {
+                # 		"url": "http://192.168.30.108:8081/artifactory/LinuxScripts/ls.sh"
+                # 	},
+                # 	"hostDetails": {
+                # 		"ip": "192.168.85.20",
+                # 		"username": "root",
+                # 		"password": "qs1234",
+                # 		"connectionMethod": "ssh"
+                # 	}
+                # }'''
+                # context = ResourceCommandContext()
+                # context.resource = ResourceContextDetails()
+                # context.resource.name = 'TEST Resource'
+                # context.reservation = ReservationContextDetails()
+                # context.reservation.reservation_id = '8cc5bc1a-ae62-43c6-8772-3cd2bde5dbd8'
+                #
+                # shell = CustomScriptShell()
+                #
+                # shell.execute_script(context, conf)
+
+    def get_public_ip(self, api, command_context, private_ip):
+        reservation_details = api.GetReservationDetails(reservationId=command_context.reservation.reservation_id)
+        resource = next(x for x in reservation_details.ReservationDescription.Resources if x.FullAddress == private_ip)
+        details = api.GetResourceDetails(resource.Name)
+        public_ip = next(x.Value for x in details.ResourceAttributes if x.Name == "Public IP")
+        return public_ip
