@@ -39,7 +39,8 @@ class CustomScriptShell(object):
                     output_writer = ReservationOutputWriter(api, command_context)
                     script_conf = ScriptConfigurationParser(api).json_to_object(script_conf_json)
 
-                    script_conf.host_conf.ip = self.get_public_ip(api, command_context, script_conf.host_conf.ip)
+                    self._try_override_host_ip(api, command_context, script_conf)
+
                     logger.info('Will use IP: '+script_conf.host_conf.ip)
 
                     logger.info('Downloading file from \'%s\' ...' % script_conf.script_repo.url)
@@ -56,6 +57,11 @@ class CustomScriptShell(object):
 
                     service.execute(script_file, script_conf.host_conf.parameters, output_writer,
                                     script_conf.print_output)
+
+    def _try_override_host_ip(self, api, command_context, script_conf):
+        public_ip = self._get_public_ip(api, command_context, script_conf.host_conf.ip)
+        if public_ip:
+            script_conf.host_conf.ip = public_ip
 
     def _download_script(self, script_repo, logger, cancel_sampler):
         """
@@ -132,7 +138,7 @@ class CustomScriptShell(object):
                 #
                 # shell.execute_script(context, conf)
 
-    def get_public_ip(self, api, command_context, private_ip):
+    def _get_public_ip(self, api, command_context, private_ip):
         reservation_details = api.GetReservationDetails(reservationId=command_context.reservation.reservation_id)
         resource = next(x for x in reservation_details.ReservationDescription.Resources if x.FullAddress == private_ip)
         details = api.GetResourceDetails(resource.Name)
