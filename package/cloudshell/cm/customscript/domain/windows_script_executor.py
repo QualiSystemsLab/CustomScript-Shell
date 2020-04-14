@@ -79,8 +79,9 @@ class WindowsScriptExecutor(IScriptExecutor):
             self.logger.info('Done.')
 
             self.logger.info('Running "%s" on target machine ...' % script_file.name)
-            self.run_script(tmp_folder, script_file, env_vars, output_writer, print_output)
+            result = self.run_script(tmp_folder, script_file, env_vars, output_writer, print_output)
             self.logger.info('Done.')
+            return result
 
         finally:
             self.logger.info('Deleting "%s" folder from target machine ...' % tmp_folder)
@@ -143,6 +144,7 @@ Invoke-Expression "& '$path'"
             output_writer.write(result.std_err)
         if result.status_code != 0:
             raise Exception(ErrorMsg.RUN_SCRIPT % result.std_err)
+        return result
 
     def delete_temp_folder(self, tmp_folder):
         """

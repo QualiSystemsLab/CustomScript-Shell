@@ -1,15 +1,15 @@
 import json
 import os
-
-import errno
-
 import time
+
 from cloudshell.core.context.error_handling_context import ErrorHandlingContext
 from cloudshell.shell.core.context import ResourceCommandContext
 from cloudshell.shell.core.session.cloudshell_session import CloudShellSessionContext
 from cloudshell.shell.core.session.logging_session import LoggingSessionContext
 
 from cloudshell.cm.customscript.domain.cancellation_sampler import CancellationSampler
+from cloudshell.cm.customscript.domain.command_configuration import CommandConfigurationParser
+from cloudshell.cm.customscript.domain.linux_script_executor import LinuxScriptExecutor
 from cloudshell.cm.customscript.domain.reservation_output_writer import ReservationOutputWriter
 from cloudshell.cm.customscript.domain.script_configuration import ScriptConfigurationParser, ScriptRepository, \
     HostConfiguration
@@ -53,6 +53,44 @@ class CustomScriptShell(object):
                     logger.info('Done.')
 
                     service.execute(script_file, script_conf.host_conf.parameters, output_writer, script_conf.print_output)
+
+    def execute_command(self, context, request, cancellation_context):
+        """
+        Method executes a command on the target host and returns the output in format "{str_out: '', str_err: ''}"
+        This method is intended to be used directly by other shells and expects to get password/ssh key in clear text
+        :type context: ResourceCommandContext
+        :type request: str
+        :type cancellation_context: CancellationContext
+        """
+        with LoggingSessionContext(context) as logger, ErrorHandlingContext(logger):
+            with CloudShellSessionContext(context) as api:
+                logger.debug('\'execute_command\' is called with the request json: \n' + request)
+
+                cancel_sampler = CancellationSampler(cancellation_context)
+                command_conf = CommandConfigurationParser(api).json_to_object(request)
+                output_writer = ReservationOutputWriter(api, context)
+
+                service = ScriptExecutorSelector.get(command_conf.host_conf, logger, cancel_sampler)
+
+                script_file = ScriptFile(self._get_script_name_for_command(service), request)
+
+                logger.info('Connecting ...')
+                self._connect(service, cancel_sampler, command_conf.timeout_minutes)
+                logger.info('Done.')
+
+                result = service.execute(script_file, command_conf.host_conf.parameters, output_writer, False)
+
+                return json.dumps(result)
+
+    def _get_script_name_for_command(self, service):
+        """
+        :type IScriptExecutor service:
+        """
+        name_template = 'command.{}'
+        if isinstance(service, LinuxScriptExecutor):
+            return name_template.format('.sh')
+        else:
+            return name_template.format('.ps1')
 
     def _download_script(self, script_repo, logger, cancel_sampler):
         """
@@ -117,12 +155,16 @@ class CustomScriptShell(object):
 # 		"connectionMethod": "ssh"
 # 	}
 # }'''
-# context = ResourceCommandContext()
+context = ResourceCommandContext()
 # context.resource = ResourceContextDetails()
 # context.resource.name = 'TEST Resource'
 # context.reservation = ReservationContextDetails()
-# context.reservation.reservation_id = '8cc5bc1a-ae62-43c6-8772-3cd2bde5dbd8'
+# context.reservation.reservation_id = 'a835f992-39ab-4864-b815-263c8e682a5a'
+#
+# cancellation_context = CancellationContext()
+# cancellation_context.is_cancelled = False
 #
 # shell = CustomScriptShell()
-#
+# print shell.execute_command(context, "cat /tmp/bla.txt", cancellation_context)
+
 # shell.execute_script(context, conf)
