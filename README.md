@@ -4,6 +4,10 @@
 
 
 # CustomScript-Shell 
+Adding Custom changes to driver and package
+
+Changelog:
+- 25/06/2020 - Extending package to disable SSL Verification
 
 ## Links
 * [Offline Package] (https://support.quali.com/hc/en-us/articles/231613247)
