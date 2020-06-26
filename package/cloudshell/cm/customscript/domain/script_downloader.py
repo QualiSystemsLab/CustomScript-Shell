@@ -36,7 +36,10 @@ class ScriptDownloader(object):
         :type auth: HttpAuth
         :rtype ScriptFile
         """
-        response = requests.get(url, auth=(auth.username, auth.password) if auth else None, stream=True)
+        auth = (auth.username, auth.password) if auth else None
+        
+        # adding change to skip SSL verification
+        response = requests.get(url, auth=auth, stream=True, verify=False)
         file_name = self._get_filename(response)
         file_txt = ''
 
