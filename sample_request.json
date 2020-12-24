@@ -1,0 +1,42 @@
+{
+  "additionalArgs": null,
+  "timeoutMinutes": 20.0,
+  "repositoryDetails": {
+    "url": "http://192.168.85.62/root/qualiconfig/api/v4/projects/4/repository/files/hello_world.sh/raw?ref=master",
+    "username": "root",
+    "password": "Quali123!"
+  },
+  "hostsDetails": [
+    {
+      "ip": "NA",
+      "username": "root",
+      "password": "94Yo5IHjOsmWRsF7ViI5KA==",
+      "accessKey": "",
+      "connectionMethod": "SSH",
+      "groups": null,
+      "parameters": [
+        {
+          "name": "GL_IP",
+          "value": "1.1.1.1"
+        },
+        {
+          "name": "GL_PATH",
+          "value": "test.sh"
+        },
+        {
+          "name": "GL_BRANCH",
+          "value": "master"
+        },
+        {
+          "name": "GL_TOKEN",
+          "value": "asdf"
+        },
+        {
+          "name": "GL_PROJECT_ID",
+          "value": "2"
+        }
+      ]
+    }
+  ],
+  "printOutput": true
+}
