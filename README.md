@@ -4,10 +4,28 @@
 
 
 # CustomScript-Shell 
-Adding Custom changes to driver and package
+This is an extended repo of the official Qualisystems configuration management package. 
+Custom changes to driver and package have been added.
 
-Changelog:
+## Custom Param Overrides
+The following configuration management parameters can be over-ridden by adding the following:
+- REPO_URL
+- REPO_USER
+- REPO_PASSWORD (will be a plain text parameter)
+- CONNECTION_METHOD
+
+## Gitlab Support
+- Gitlab links are supported, but require the URL to be in format of their REST api
+- http://<SERVER_IP>/api/4/projects/<PROJECT_ID>/repository/files/<PROJECT_PATH>/raw?ref=<GIT_BRANCH>
+- ex - http://10.160.7.7/api/4/projects/4/repository/files/hello_world.sh/raw?ref=master
+
+- The password field needs to be populated with gitlab access token, which will be sent along with request as header
+- Gitlab docs - https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html
+- The "User" field can be left blank for gitlab auth. Only access token needed
+
+## Changelog
 - 25/06/2020 - Extending package to disable SSL Verification
+- 25/12/2020 - Added Gitlab Support & Parameter Over-rides
 
 ## Links
 * [Offline Package] (https://support.quali.com/hc/en-us/articles/231613247)

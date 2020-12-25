@@ -7,6 +7,8 @@ import requests
 from cloudshell.cm.customscript.domain.cancellation_sampler import CancellationSampler
 from cloudshell.cm.customscript.domain.script_file import ScriptFile
 from cloudshell.cm.customscript.domain.script_configuration import ScriptConfiguration
+from cloudshell.cm.customscript.domain.sandbox_reporter import SandboxReporter
+from cloudshell.cm.customscript.domain.gitlab_api_url_validator import is_gitlab_rest_url
 
 
 class HttpAuth(object):
@@ -18,14 +20,14 @@ class HttpAuth(object):
 class ScriptDownloader(object):
     CHUNK_SIZE = 1024 * 1024
 
-    def __init__(self, script_config, logger, cancel_sampler):
+    def __init__(self, script_config, reporter, cancel_sampler):
         """
         :type script_config: ScriptConfiguration
-        :type logger: Logger
+        :type reporter: SandboxReporter
         :type cancel_sampler: CancellationSampler
         """
         self.script_config = script_config
-        self.logger = logger
+        self.reporter = reporter
         self.cancel_sampler = cancel_sampler
         self.filename_pattern = "(?P<filename>\s*[\w,\s-]+\.(sh|bash|ps1)\s*)"
         self.filename_patterns = {
@@ -34,32 +36,40 @@ class ScriptDownloader(object):
             "X-Gitlab-File-Name": self.filename_pattern
         }
 
+    @staticmethod
+    def _get_auth_and_validate(repo_user, repo_password):
+        if repo_user and repo_password:
+            auth = (repo_user, repo_password)
+        elif repo_user and not repo_password:
+            raise Exception("Repo User is populated, but Password is empty. Leave both empty for 'no-auth' repos")
+        elif repo_password and not repo_user:
+            raise Exception("Repo Password is populated, but User is empty. Leave both empty for 'no-auth' repos")
+        else:
+            auth = None
+        return auth
+
     def download(self):
         """
         :type url: str
-        :type auth: HttpAuth
         :rtype ScriptFile
         """
-        gitlab_details = self.script_config.gitlab_details
+        script_repo = self.script_config.script_repo
+        repo_url = script_repo.url
+        is_gitlab_url = is_gitlab_rest_url(repo_url)
 
-        if not gitlab_details.server:
-            # STANDARD FLOW
-            script_repo = self.script_config.script_repo
-            if script_repo.username and script_repo.password:
-                auth = (script_repo.username, script_repo.password)
-            else:
-                auth = None
-            self.logger.info("downloading script from url: {}".format(script_repo.url))
-            response = requests.get(script_repo.url, auth=auth, stream=True, verify=False)
+        if is_gitlab_url:
+            # GITLAB REST API CALL - ADDING TOKEN HEADER
+            self.reporter.info_out("downloading script via Gitlab Rest call: {}".format(repo_url))
+            headers = {"PRIVATE-TOKEN": script_repo.password}
+            response = requests.get(repo_url, stream=True, verify=False, headers=headers)
         else:
-            # GITLAB REST API CALL
-            url = "http://{}/api/v4/projects/{}/repository/files/{}/raw?ref={}".format(gitlab_details.server,
-                                                                                       gitlab_details.project_id,
-                                                                                       gitlab_details.script_path,
-                                                                                       gitlab_details.script_branch)
-            headers = {"PRIVATE-TOKEN": gitlab_details.access_token}
-            self.logger.info("downloading script via Gitlab Rest call: {}".format(url))
-            response = requests.get(url, stream=True, verify=False, headers=headers)
+            # STANDARD FLOW (GITHUB etc)
+            auth = self._get_auth_and_validate(script_repo.username, script_repo.password)
+            if auth:
+                self.reporter.info_out("downloading script from 'auth' url: {}".format(script_repo.url))
+            else:
+                self.reporter.info_out("downloading script from 'no-auth' url: {}".format(script_repo.url))
+            response = requests.get(script_repo.url, auth=auth, stream=True, verify=False)
 
         self._validate_response_status_code(response)
         self._invalidate_gitlab_login_page(response.url, response.content)
@@ -73,7 +83,7 @@ class ScriptDownloader(object):
             self.cancel_sampler.throw_if_canceled()
 
         self._invalidate_html(file_txt)
-        self.logger.info("file downloaded: {}".format(file_name))
+        self.reporter.info_out("file downloaded: {}".format(file_name))
         return ScriptFile(name=file_name, text=file_txt)
 
     def _validate_response_status_code(self, response):

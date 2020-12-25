@@ -11,6 +11,7 @@ from cloudshell.shell.core.session.logging_session import LoggingSessionContext
 
 from cloudshell.cm.customscript.domain.cancellation_sampler import CancellationSampler
 from cloudshell.cm.customscript.domain.reservation_output_writer import ReservationOutputWriter
+from cloudshell.cm.customscript.domain.sandbox_reporter import SandboxReporter
 from cloudshell.cm.customscript.domain.script_configuration import ScriptConfigurationParser, ScriptRepository, \
     HostConfiguration, ScriptConfiguration
 from cloudshell.cm.customscript.domain.script_downloader import ScriptDownloader, HttpAuth
@@ -36,19 +37,31 @@ class CustomScriptShell(object):
 
             with ErrorHandlingContext(logger):
                 with CloudShellSessionContext(command_context) as api:
+                    reporter = SandboxReporter(api, command_context.reservation.reservation_id, logger)
                     cancel_sampler = CancellationSampler(cancellation_context)
                     script_conf = ScriptConfigurationParser(api).json_to_object(script_conf_json)
                     output_writer = ReservationOutputWriter(api, command_context)
 
-                    script_file = ScriptDownloader(script_conf, logger, cancel_sampler).download()
+                    reporter.debug_out("=== config management object details ===", log_only=True)
+                    reporter.debug_out(script_conf.get_pretty_json(), log_only=True)
+                    host_ip = script_conf.host_conf.ip
+
+                    script_file = ScriptDownloader(script_conf, reporter, cancel_sampler).download()
                     service = ScriptExecutorSelector.get(script_conf.host_conf, logger, cancel_sampler)
                     self._warn_for_unexpected_file_type(script_conf.host_conf, service, script_file, output_writer)
 
-                    logger.info('Connecting ...')
-                    self._connect(service, cancel_sampler, script_conf.timeout_minutes)
-                    logger.info('Done.')
+                    reporter.info_out('Connecting to host {}...'.format(host_ip))
+                    try:
+                        self._connect(service, cancel_sampler, script_conf.timeout_minutes)
+                    except Exception as e:
+                        exc_msg = "Error connecting to host '{}': {}".format(host_ip, str(e))
+                        reporter.exc_out(exc_msg)
+                        raise Exception(exc_msg)
+                    reporter.info_out('Successfully connected to host: {}.'.format(host_ip))
 
+                    reporter.info_out("Running script on host '{}'...".format(host_ip))
                     service.execute(script_file, script_conf.host_conf.parameters, output_writer, script_conf.print_output)
+                    reporter.warn_out("Script done running on host '{}'".format(host_ip))
 
     def _warn_for_unexpected_file_type(self, target_host, service, script_file, output_writer):
         """
