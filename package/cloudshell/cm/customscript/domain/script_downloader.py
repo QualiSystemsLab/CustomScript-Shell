@@ -49,6 +49,7 @@ class ScriptDownloader(object):
                 auth = (script_repo.username, script_repo.password)
             else:
                 auth = None
+            self.logger.info("downloading script from url: {}".format(script_repo.url))
             response = requests.get(script_repo.url, auth=auth, stream=True, verify=False)
         else:
             # GITLAB REST API CALL
@@ -57,6 +58,7 @@ class ScriptDownloader(object):
                                                                                        gitlab_details.script_path,
                                                                                        gitlab_details.script_branch)
             headers = {"PRIVATE-TOKEN": gitlab_details.access_token}
+            self.logger.info("downloading script via Gitlab Rest call: {}".format(url))
             response = requests.get(url, stream=True, verify=False, headers=headers)
 
         self._validate_response_status_code(response)
@@ -71,7 +73,7 @@ class ScriptDownloader(object):
             self.cancel_sampler.throw_if_canceled()
 
         self._invalidate_html(file_txt)
-
+        self.logger.info("file downloaded: {}".format(file_name))
         return ScriptFile(name=file_name, text=file_txt)
 
     def _validate_response_status_code(self, response):
