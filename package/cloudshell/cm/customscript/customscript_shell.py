@@ -12,7 +12,7 @@ from cloudshell.shell.core.session.logging_session import LoggingSessionContext
 from cloudshell.cm.customscript.domain.cancellation_sampler import CancellationSampler
 from cloudshell.cm.customscript.domain.reservation_output_writer import ReservationOutputWriter
 from cloudshell.cm.customscript.domain.script_configuration import ScriptConfigurationParser, ScriptRepository, \
-    HostConfiguration
+    HostConfiguration, ScriptConfiguration
 from cloudshell.cm.customscript.domain.script_downloader import ScriptDownloader, HttpAuth
 from cloudshell.cm.customscript.domain.script_executor import IScriptExecutor, ExcutorConnectionError
 from cloudshell.cm.customscript.domain.script_executor_selector import ScriptExecutorSelector
@@ -40,12 +40,8 @@ class CustomScriptShell(object):
                     script_conf = ScriptConfigurationParser(api).json_to_object(script_conf_json)
                     output_writer = ReservationOutputWriter(api, command_context)
 
-                    logger.info('Downloading file from \'%s\' ...' % script_conf.script_repo.url)
-                    script_file = self._download_script(script_conf.script_repo, logger, cancel_sampler)
-                    logger.info('Done (%s, %s chars).' % (script_file.name, len(script_file.text)))
-
+                    script_file = ScriptDownloader(script_conf, logger, cancel_sampler).download()
                     service = ScriptExecutorSelector.get(script_conf.host_conf, logger, cancel_sampler)
-
                     self._warn_for_unexpected_file_type(script_conf.host_conf, service, script_file, output_writer)
 
                     logger.info('Connecting ...')
@@ -53,19 +49,6 @@ class CustomScriptShell(object):
                     logger.info('Done.')
 
                     service.execute(script_file, script_conf.host_conf.parameters, output_writer, script_conf.print_output)
-
-    def _download_script(self, script_repo, logger, cancel_sampler):
-        """
-        :type script_repo: ScriptRepository
-        :type logger: Logger
-        :type cancel_sampler: CancellationSampler
-        :rtype ScriptFile
-        """
-        url = script_repo.url
-        auth = None
-        if script_repo.username:
-            auth = HttpAuth(script_repo.username, script_repo.password)
-        return ScriptDownloader(logger, cancel_sampler).download(url, auth)
 
     def _warn_for_unexpected_file_type(self, target_host, service, script_file, output_writer):
         """
