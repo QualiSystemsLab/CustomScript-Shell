@@ -1,19 +1,29 @@
 import json
 import numbers
 
+# OPTIONAL SCRIPT PARAMETERS, IF PRESENT WILL OVERRIDE THE DEFAULT READ-ONLY VALUES
+REPO_URL_PARAM = "REPO_URL"
+REPO_USER_PARAM = "REPO_USER"
+REPO_PASSWORD_PARAM = "REPO_PASSWORD"
+CONNECTION_METHOD_PARAM = "CONNECTION_METHOD"
+
 
 class ScriptConfiguration(object):
-    def __init__(self, script_repo = None, host_conf = None, timeout_minutes = None, print_output = True):
+    def __init__(self, script_repo=None, host_conf=None, timeout_minutes=None, print_output=True):
         """
         :type script_repo: ScriptRepository
         :type host_conf: HostConfiguration
         :type timeout_minutes: float
         :type print_output: bool
+        :type gitlab_details: GitLabRepoDetails
         """
         self.timeout_minutes = timeout_minutes or 0.0
         self.script_repo = script_repo or ScriptRepository()
         self.host_conf = host_conf or HostConfiguration()
         self.print_output = print_output
+
+    def get_pretty_json(self):
+        return json.dumps(self, default=lambda o: getattr(o, '__dict__', str(o)), indent=4)
 
 
 class ScriptRepository(object):
@@ -32,6 +42,29 @@ class HostConfiguration(object):
         self.password = None
         self.access_key = None
         self.parameters = {}
+
+
+def over_ride_defaults(script_conf):
+    """
+    go over custom params and over-ride values
+    :param ScriptConfiguration script_conf:
+    :return same config:
+    :rtype ScriptConfiguration
+    """
+    params_dict = script_conf.host_conf.parameters
+    if params_dict.get(REPO_URL_PARAM):
+        script_conf.script_repo.url = params_dict[REPO_URL_PARAM]
+
+    if params_dict.get(REPO_USER_PARAM):
+        script_conf.script_repo.username = params_dict[REPO_USER_PARAM]
+
+    if params_dict.get(REPO_PASSWORD_PARAM):
+        script_conf.script_repo.password = params_dict[REPO_PASSWORD_PARAM]
+
+    if params_dict.get(CONNECTION_METHOD_PARAM):
+        script_conf.host_conf.connection_method = params_dict[CONNECTION_METHOD_PARAM].lower()
+
+    return script_conf
 
 
 class ScriptConfigurationParser(object):
@@ -69,8 +102,9 @@ class ScriptConfigurationParser(object):
         script_conf.host_conf.password = self._get_password(host)
         script_conf.host_conf.access_key = self._get_access_key(host)
         if host.get('parameters'):
-            script_conf.host_conf.parameters = dict((i['name'], i['value']) for i in host['parameters'])
-
+            all_params_dict = dict((i['name'], i['value']) for i in host['parameters'])
+            script_conf.host_conf.parameters = all_params_dict
+            script_conf = over_ride_defaults(script_conf)
         return script_conf
 
     def _get_password(self, json_host):
@@ -90,7 +124,7 @@ class ScriptConfigurationParser(object):
     @staticmethod
     def _validate(json_obj):
         """
-        :type json_obj: json
+        :type json_obj: dict
         :rtype bool
         """
         basic_msg = 'Failed to parse script configuration input json: '
@@ -120,6 +154,12 @@ class ScriptConfigurationParser(object):
 
         if not json_obj.get('hostsDetails')[0].get('connectionMethod'):
             raise SyntaxError(basic_msg + 'Missing/Empty "hostsDetails[0].connectionMethod" node.')
+
+        if json_obj.get('hostsDetails')[0].get('ip') == "NA":
+            raise ValueError(basic_msg + 'HostDetails IP is NA, will not be able to connect.')
+
+    def get_pretty_json(self):
+        return json.dumps(self, default=lambda o: getattr(o, '__dict__', str(o)), indent=4)
 
 
 def bool_parse(b):

@@ -2,7 +2,7 @@
   "additionalArgs": null,
   "timeoutMinutes": 20.0,
   "repositoryDetails": {
-    "url": "http://192.168.85.62/root/qualiconfig/api/v4/projects/4/repository/files/hello_world.sh/raw?ref=master",
+    "url": "http://192.168.85.62/api/v4/projects/4/repository/files/hello_world.sh/raw?ref=master",
     "username": "root",
     "password": "Quali123!"
   },
@@ -16,11 +16,27 @@
       "groups": null,
       "parameters": [
         {
-          "name": "GL_IP",
+          "name": "REPO_RAW_URL",
+          "value": "http://www.myscript.com/raw"
+        },
+        {
+          "name": "REPO_USER",
+          "value": "http://www.myscript.com/raw"
+        },
+        {
+          "name": "REPO_PASSWORD",
+          "value": "http://www.myscript.com/raw"
+        },
+        {
+          "name": "GL_SERVER",
           "value": "1.1.1.1"
         },
         {
-          "name": "GL_PATH",
+          "name": "GL_SSL",
+          "value": "true"
+        },
+        {
+          "name": "GL_SCRIPT_PATH",
           "value": "test.sh"
         },
         {
@@ -34,6 +50,10 @@
         {
           "name": "GL_PROJECT_ID",
           "value": "2"
+        },
+        {
+          "name": "CONNECTION_METHOD",
+          "value": "SSH"
         }
       ]
     }

@@ -63,7 +63,7 @@ class LinuxScriptExecutor(IScriptExecutor):
         """
         :rtype list[str]
         """
-        return ['.sh','.bash']
+        return ['.sh', '.bash']
         # file_name, file_ext = os.path.splitext(script_file.name)
         # if file_ext and file_ext != '.sh' and file_ext != '.bash':
         #     output_writer.write_warning('Trying to run "%s" file via ssh on host %s' % (file_ext, self.target_host.ip))
