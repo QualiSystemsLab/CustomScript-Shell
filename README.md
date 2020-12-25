@@ -16,8 +16,8 @@ The following configuration management parameters can be over-ridden by adding t
 
 ## Gitlab Support
 - Gitlab links are supported, but require the URL to be in format of their REST api
-- http://<SERVER_IP>/api/4/projects/<PROJECT_ID>/repository/files/<PROJECT_PATH>/raw?ref=<GIT_BRANCH>
-- ex - http://10.160.7.7/api/4/projects/4/repository/files/hello_world.sh/raw?ref=master
+- http://<SERVER_IP>/api/<API_VERSION>/projects/<PROJECT_ID>/repository/files/<PROJECT_PATH>/raw?ref=<GIT_BRANCH>
+- example - http://10.160.7.7/api/v4/projects/4/repository/files/hello_world.sh/raw?ref=master
 
 - The password field needs to be populated with gitlab access token, which will be sent along with request as header
 - Gitlab docs - https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html
