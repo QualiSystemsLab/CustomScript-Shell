@@ -28,7 +28,7 @@ The following configuration management parameters can be over-ridden by adding t
 - Download python package from releases and place in local pypi server on Quali Server
     - Path: C:\Program Files (x86)\QualiSystems\CloudShell\Server\Config\Pypi Server Repository
 - Delete CustomScript venv (if it exists) to force creation of new venv with updated package
-    - Path: C:\ProgramData\QualiSystems\venv\Custom_Script_Driver_<uid>
+    - Path: C:\ProgramData\QualiSystems\venv\Custom_Script_Driver_{{driver_uid}}
 
 ## Changelog
 - 25/06/2020 - Extending package to disable SSL Verification
