@@ -11,13 +11,13 @@ def is_gitlab_rest_url(url):
     EXAMPLE = "http://<SERVER_IP>/api/4/projects/<PROJECT_ID>/repository/files/<PROJECT_PATH>/raw?ref=<GIT_BRANCH>"
 
     # DETERMINE INTENT TO USE GITLAB
-    initial_pattern_check = "api/v\d/projects/\d/repository/files"
+    initial_pattern_check = "api/v\d/projects/\d+/repository/files"
     matching = re.search(initial_pattern_check, url)
     if not matching:
         return False
 
     # VALIDATE ENTIRE GITLAB URL STRING
-    gitlab_api_pattern = "https?://.+/api/v\d/projects/\d/repository/files/.+/raw\?ref=.+"
+    gitlab_api_pattern = "https?://.+/api/v\d/projects/\d+/repository/files/.+/raw\?ref=.+"
     matching = re.match(gitlab_api_pattern, url)
     if not matching:
         raise Exception("Gitlab Rest API URL failed validation. Should be of form: {}".format(EXAMPLE))
