@@ -26,6 +26,6 @@ def is_gitlab_rest_url(url):
 
 
 if __name__ == "__main__":
-    input_url = "http://192.168.85.62/api/v4/projects/4/repository/files/hello_world.sh/raw?ref=master"
+    input_url = "http://192.168.85.62/api/v4/projects/43/repository/files/hello_world.sh/raw?ref=master"
     is_gitlab = is_gitlab_rest_url(input_url)
     print(is_gitlab)
